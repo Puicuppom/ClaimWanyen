@@ -10,10 +10,10 @@
     <style>
       :root {
         --theme-pink: #F8C8DC; --theme-pink-hover: #f7b4d1; --theme-pink-light: #FFF0F5;
-        --theme-dark-text: #4A4A4A; --theme-border: #E0E0E0;
+        --theme-dark-text: #4A4A4A; --theme-border: #E0E0E0; --theme-success: #28a745; --theme-warning: #ffc107; --theme-info: #17a2b8; --theme-danger: #dc3545;
       }
       body { background-color: var(--theme-pink-light); color: var(--theme-dark-text); font-family: 'Kanit', sans-serif; }
-      .container { max-width: 500px; background-color: #ffffff; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); padding: 0; margin: 2rem auto; overflow: hidden; }
+      .container { max-width: 900px; background-color: #ffffff; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); padding: 0; margin: 2rem auto; overflow: hidden; }
       .main-header { background-color: var(--theme-pink); color: white; padding: 1.5rem; text-align: center; display: flex; justify-content: space-between; align-items: center; }
       .nav-tabs { border-bottom: none; background-color: var(--theme-pink-light); padding: 8px; border-radius: 10px; margin: 1.5rem 1.5rem 0 1.5rem; }
       .nav-tabs .nav-item { flex: 1; text-align: center; }
@@ -21,7 +21,7 @@
       .nav-tabs .nav-link:not(.active):hover { background-color: #ffffff; color: var(--theme-pink); }
       .nav-tabs .nav-link.active { background-color: var(--theme-pink); color: white; box-shadow: 0 4px 8px rgba(248, 200, 220, 0.6); }
       .tab-content, #auth-container .card-body { padding: 1.5rem; }
-      .form-group label { font-weight: 500; margin-bottom: 0.5rem; }
+      .form-group label { font-weight: 500; margin-bottom: 0.5rem; display: block; }
       .form-control, .custom-select { border-radius: 8px; border: 1px solid var(--theme-border); padding: 0.75rem 1rem; height: auto; }
       .form-control:focus { border-color: var(--theme-pink); box-shadow: 0 0 0 0.2rem rgba(248, 200, 220, 0.5); }
       .btn-custom { background-color: var(--theme-pink); border-color: var(--theme-pink); color: white; font-weight: 500; padding: 0.75rem; border-radius: 8px; width: 100%; transition: background-color 0.2s; }
@@ -29,10 +29,24 @@
       #logoutBtn { background: none; border: none; color: white; font-size: 1.2rem; cursor: pointer; }
       #loadingModal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(255, 255, 255, 0.7); z-index: 1050; align-items: center; justify-content: center; }
       .spinner-border { color: var(--theme-pink); }
+      .table-responsive { max-height: 400px; }
+      .dashboard-group h5 { font-weight: bold; color: var(--theme-dark-text); border-bottom: 2px solid var(--theme-pink-light); padding-bottom: 0.5rem; }
+      .dashboard-card-small { padding: 1rem; margin-bottom: 1rem; border-radius: 8px; text-align: center; box-shadow: 0 1px 4px rgba(0,0,0,0.04); border: 1px solid #eee; }
+      .dashboard-card-small .icon { font-size: 1.8rem; margin-bottom: 0.25rem; }
+      .dashboard-card-small h4 { font-size: 1.8rem; font-weight: bold; margin-bottom: 0; }
+      .dashboard-card-small p { margin: 0; font-size: 0.8rem; color: #6c757d; }
+      .card-total { background-color: var(--theme-pink-light); } .card-total .icon { color: var(--theme-pink); }
+      .card-used { background-color: #e9f5ea; } .card-used .icon { color: var(--theme-success); }
+      .card-expired { background-color: #fff8e1; } .card-expired .icon { color: var(--theme-warning); }
+      .card-remaining { background-color: #e3f2fd; } .card-remaining .icon { color: var(--theme-info); }
+      /* ===== START: เพิ่มสไตล์สำหรับตารางสรุปรายเดือน ===== */
+      .table-report-monthly th, .table-report-monthly td { text-align: center; vertical-align: middle; }
+      .table-report-monthly th:first-child, .table-report-monthly td:first-child { text-align: left; }
+      /* ===== END: สไตล์ใหม่ ===== */
     </style>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;500;700&display=swap" rel="stylesheet">
 </head>
 <body>
     
@@ -54,15 +68,15 @@
         <button id="logoutBtn" title="ออกจากระบบ"><i class="fas fa-sign-out-alt"></i></button>
       </div>
 
-      <!-- ===== START: ส่วนที่แก้ไข เพิ่มแท็บ "รายงาน" ===== -->
       <ul class="nav nav-tabs" id="myTab" role="tablist">
         <li class="nav-item"><a class="nav-link active" data-toggle="tab" href="#use-code"><i class="fas fa-hand-pointer"></i> ใช้โค้ด</a></li>
         <li class="nav-item"><a class="nav-link" data-toggle="tab" href="#import"><i class="fas fa-file-upload"></i> นำเข้าโค้ด</a></li>
-        <li class="nav-item"><a class="nav-link" data-toggle="tab" href="#report"><i class="fas fa-file-excel"></i> รายงาน</a></li>
+        <li class="nav-item"><a class="nav-link" data-toggle="tab" href="#manage"><i class="fas fa-tasks"></i> จัดการโค้ด</a></li>
+        <li class="nav-item"><a class="nav-link" data-toggle="tab" href="#report"><i class="fas fa-chart-pie"></i> รายงาน</a></li>
       </ul>
-      <!-- ===== END: ส่วนที่แก้ไข เพิ่มแท็บ "รายงาน" ===== -->
 
       <div class="tab-content">
+        <!-- Tab: ใช้โค้ด -->
         <div class="tab-pane fade show active" id="use-code">
             <h5 class="mb-3">เลือกและบันทึกการใช้งาน</h5>
             <div class="form-group"><label for="filterCodeType">ประเภทโค้ด</label><select class="custom-select" id="filterCodeType" onchange="loadAvailableCodes()"><option value="">-- กรุณาเลือก --</option></select></div>
@@ -73,6 +87,7 @@
             <div class="form-group"><label for="notes">หมายเหตุ (ถ้ามี)</label><textarea class="form-control" id="notes" rows="2"></textarea></div>
             <button class="btn btn-custom mt-3" onclick="handleUseCode()"><i class="fas fa-check-circle"></i> บันทึกการใช้งาน</button>
         </div>
+        <!-- Tab: นำเข้า -->
         <div class="tab-pane fade" id="import">
             <h5 class="mb-3">นำเข้าโค้ดจากไฟล์ Excel</h5>
             <div class="form-group"><label for="xlsFile">เลือกไฟล์ (.xls, .xlsx)</label><input type="file" class="form-control-file" id="xlsFile" accept=".xls, .xlsx"></div>
@@ -80,19 +95,63 @@
             <div class="form-group"><label for="expiryDate">วันหมดอายุสำหรับไฟล์นี้</label><input type="date" class="form-control" id="expiryDate"></div>
             <button class="btn btn-custom mt-3" onclick="handleImport()"><i class="fas fa-file-import"></i> นำเข้าข้อมูล</button>
         </div>
-        <!-- ===== START: ส่วนที่เพิ่มเข้ามาใหม่สำหรับแท็บ "รายงาน" ===== -->
-        <div class="tab-pane fade" id="report">
-            <h5 class="mb-3">ดาวน์โหลดรายงาน</h5>
-            <p class="text-secondary">คลิกปุ่มด้านล่างเพื่อดาวน์โหลดข้อมูลโค้ดทั้งหมดในระบบเป็นไฟล์ Excel (.xlsx)</p>
-            <button class="btn btn-custom mt-3" onclick="handleExport()"><i class="fas fa-download"></i> Export ข้อมูลทั้งหมดเป็น Excel</button>
+        
+        <!-- Tab: จัดการโค้ด -->
+        <div class="tab-pane fade" id="manage">
+            <h5 class="mb-3">จัดการสถานะโค้ด</h5>
+            <div class="row">
+                <div class="col-md-3 form-group"><label>วันที่สร้าง</label><select id="manageFilterDate" class="custom-select"></select></div>
+                <div class="col-md-3 form-group"><label>สถานะ</label><select id="manageFilterStatus" class="custom-select"><option value="">ทุกสถานะ</option><option value="ยังไม่ใช้">ยังไม่ใช้</option><option value="ใช้แล้ว">ใช้แล้ว</option><option value="ยกเลิก">ยกเลิก</option></select></div>
+                <div class="col-md-4 form-group"><label>ค้นหาโค้ด</label><input type="text" id="manageFilterSearch" class="form-control" placeholder="กรอกโค้ดบางส่วน..."></div>
+                <div class="col-md-2 form-group d-flex align-items-end"><button class="btn btn-info w-100" onclick="loadCodesForManagement()"><i class="fas fa-filter"></i> กรอง</button></div>
+            </div>
+            <hr>
+            <div class="table-responsive">
+                <table class="table table-sm table-hover">
+                    <thead><tr><th scope="col"><input type="checkbox" id="selectAllCheckbox" onclick="toggleAllCheckboxes(this.checked)"></th><th scope="col">โค้ด</th><th scope="col">ประเภท</th><th scope="col">สถานะ</th><th scope="col">วันที่สร้าง</th><th scope="col">วันหมดอายุ</th></tr></thead>
+                    <tbody id="manageCodesTableBody"></tbody>
+                </table>
+            </div>
+            <div class="mt-3 d-flex justify-content-between">
+                <button class="btn btn-danger" onclick="handleCancelCodes()"><i class="fas fa-times-circle"></i> ยกเลิกโค้ดที่เลือก</button>
+                <button class="btn btn-success" onclick="handleExportAllData()"><i class="fas fa-download"></i> Export ข้อมูลทั้งหมด (Raw Data)</button>
+            </div>
         </div>
-        <!-- ===== END: ส่วนที่เพิ่มเข้ามาใหม่สำหรับแท็บ "รายงาน" ===== -->
+
+        <!-- Tab: รายงาน -->
+        <div class="tab-pane fade" id="report">
+            <div class="d-flex justify-content-between align-items-center"><h5 class="mb-3">Dashboard สรุปภาพรวม</h5><button class="btn btn-success mb-3" onclick="handleExport('dashboard')"><i class="fas fa-download"></i> Export ข้อมูล Dashboard</button></div>
+            <div id="dashboard-container"></div>
+            <hr>
+            <h5 class="mb-3">ตารางสรุปการใช้งาน (รายปี)</h5>
+            <div class="form-group row">
+                <label for="reportYear" class="col-sm-3 col-form-label">เลือกปีที่ต้องการดู:</label>
+                <div class="col-sm-9"><select class="custom-select" id="reportYear" onchange="loadUsageReport()"></select></div>
+            </div>
+            <!-- ===== START: แก้ไขตารางสรุปการใช้งาน ===== -->
+            <div class="table-responsive">
+                <table class="table table-bordered table-report-monthly">
+                    <thead class="thead-light">
+                        <tr>
+                            <th style="width: 15%;">ประเภทโค้ด</th>
+                            <th>ม.ค.</th><th>ก.พ.</th><th>มี.ค.</th><th>เม.ย.</th>
+                            <th>พ.ค.</th><th>มิ.ย.</th><th>ก.ค.</th><th>ส.ค.</th>
+                            <th>ก.ย.</th><th>ต.ค.</th><th>พ.ย.</th><th>ธ.ค.</th>
+                            <th style="width: 8%;">รวม</th>
+                        </tr>
+                    </thead>
+                    <tbody id="usageReportTableBody"></tbody>
+                </table>
+            </div>
+            <!-- ===== END: แก้ไขตาราง ===== -->
+            <button class="btn btn-success mt-3" onclick="handleExport('usage_report')"><i class="fas fa-download"></i> Export ตารางการใช้งาน</button>
+        </div>
       </div>
     </div>
 
     <div id="loadingModal"><div class="spinner-border" role="status"></div></div>
     
-    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
@@ -111,12 +170,16 @@
       const logoutBtn = document.getElementById('logoutBtn');
       
       let currentUser = null;
-      
+      let dashboardSummaryData = {}; 
+      // ===== START: เพิ่มตัวแปรสำหรับเก็บข้อมูลตารางสรุปรายเดือน =====
+      let monthlyUsageSummaryData = {};
+      // ===== END: เพิ่ม =====
+
       _supabase.auth.onAuthStateChange((event, session) => {
         if (session) {
           currentUser = session.user;
           showApp();
-          loadDropdowns();
+          initializeAppData();
         } else {
           currentUser = null;
           showAuth();
@@ -143,10 +206,10 @@
             let result;
             switch(action) {
                 case 'getDropdownData': {
-                    const { data: codesData, error } = await _supabase.from('codes').select('code_type, branch_id');
+                    const { data, error } = await _supabase.from('codes').select('code_type, branch_id').neq('status', 'ยกเลิก');
                     if (error) throw error;
-                    const codeTypes = [...new Set(codesData.map(c => c.code_type).filter(Boolean))];
-                    const branches = [...new Set(codesData.map(c => c.branch_id).filter(Boolean))].sort((a, b) => Number(a) - Number(b));
+                    const codeTypes = [...new Set(data.map(c => c.code_type).filter(Boolean))];
+                    const branches = [...new Set(data.map(c => c.branch_id).filter(Boolean))].sort((a, b) => Number(a) - Number(b));
                     result = { codeTypes, branches };
                     break;
                 }
@@ -154,13 +217,17 @@
                     const today = new Date().toISOString().slice(0, 10);
                     const { data, error } = await _supabase.from('codes').select('code').eq('code_type', payload.codeType).eq('status', 'ยังไม่ใช้').gte('expiry_date', today);
                     if (error) throw error;
-                    // ===== START: ส่วนที่แก้ไข ลบ ' ออก =====
                     result = data.map(c => String(c.code).replace(/^'/, ''));
-                    // ===== END: ส่วนที่แก้ไข ลบ ' ออก =====
+                    break;
+                }
+                case 'checkForDuplicates': {
+                    const { data, error } = await _supabase.from('codes').select('code').in('code', payload.codes).neq('status', 'ยกเลิก');
+                    if (error) throw error;
+                    result = data;
                     break;
                 }
                 case 'importCodes': {
-                    const codesToInsert = payload.codes.map(c => ({ code: c, code_type: payload.codeType, expiry_date: payload.expiryDate }));
+                    const codesToInsert = payload.codes.map(c => ({ code: c, code_type: payload.codeType, expiry_date: payload.expiryDate, status: 'ยังไม่ใช้' }));
                     const { error } = await _supabase.from('codes').insert(codesToInsert);
                     if (error) throw error;
                     result = { message: `นำเข้าโค้ด ${payload.codes.length} รายการสำเร็จ!` };
@@ -171,18 +238,51 @@
                         .update({ status: 'ใช้แล้ว', branch_id: payload.branch, used_at: new Date().toISOString(), notes: payload.notes, user_id: currentUser.id, admin_name: currentUser.email })
                         .eq('code', payload.code).eq('status', 'ยังไม่ใช้').select();
                     if (error) throw error;
-                    if (updated.length === 0) throw new Error(`โค้ด ${payload.code} ถูกใช้งานไปแล้ว`);
+                    if (updated.length === 0) throw new Error(`โค้ด ${payload.code} อาจถูกใช้งานไปแล้ว หรือไม่พบในระบบ`);
                     result = { message: `บันทึกการใช้โค้ด ${payload.code} สำเร็จ!` };
                     break;
                 }
-                // ===== START: ส่วนที่เพิ่มเข้ามาใหม่สำหรับ Export =====
-                case 'exportData': {
-                    const { data, error } = await _supabase.from('codes').select('*').order('created_at', { ascending: false });
+                case 'getCodesForManagement': {
+                    let query = _supabase.from('codes').select('*').order('created_at', { ascending: false });
+                    if (payload.creationDate) {
+                        const startDate = payload.creationDate;
+                        const nextDay = new Date(startDate);
+                        nextDay.setDate(nextDay.getDate() + 1);
+                        const endDate = nextDay.toISOString().slice(0, 10);
+                        query = query.gte('created_at', startDate).lt('created_at', endDate);
+                    }
+                    if (payload.status) { query = query.eq('status', payload.status); }
+                    if (payload.searchTerm) { query = query.ilike('code', `%${payload.searchTerm}%`); }
+                    const { data, error } = await query;
                     if (error) throw error;
                     result = data;
                     break;
                 }
-                // ===== END: ส่วนที่เพิ่มเข้ามาใหม่สำหรับ Export =====
+                 case 'cancelCodes': {
+                    const { error } = await _supabase.from('codes').update({ status: 'ยกเลิก' }).in('code', payload.codes);
+                    if (error) throw error;
+                    result = { message: `ยกเลิกโค้ด ${payload.codes.length} รายการสำเร็จ` };
+                    break;
+                }
+                case 'getAllDataForReport': {
+                    const { data, error } = await _supabase.from('codes').select('*').neq('status', 'ยกเลิก').order('created_at', { ascending: false });
+                    if (error) throw error;
+                    result = data;
+                    break;
+                }
+                case 'getUniqueCreationDates': {
+                    const { data, error } = await _supabase.from('codes').select('created_at').order('created_at', { ascending: false });
+                    if(error) throw error;
+                    const uniqueDates = [...new Set(data.map(c => c.created_at.slice(0, 10)))];
+                    result = uniqueDates;
+                    break;
+                }
+                case 'exportAllRawData': {
+                    const { data, error } = await _supabase.from('codes').select('*').order('id', { ascending: true });
+                    if (error) throw error;
+                    result = data;
+                    break;
+                }
             }
             showLoading(false);
             return result;
@@ -198,10 +298,22 @@
         document.getElementById('availableCodes').addEventListener('change', (e) => {
             document.getElementById('copyCodeBtn').disabled = !e.target.value;
         });
+        $('a[data-toggle="tab"]').on('shown.bs.tab', function (e) {
+            const targetTab = $(e.target).attr("href");
+            if (targetTab === '#report') { loadDashboardData(); } 
+            else if (targetTab === '#manage') { loadCodesForManagement(); }
+        });
       });
 
       function showLoading(show) { document.getElementById('loadingModal').style.display = show ? 'flex' : 'none'; }
       function setTodayDate(elementId) { document.getElementById(elementId).value = new Date().toISOString().slice(0, 10); }
+
+      function initializeAppData() {
+        loadDropdowns();
+        loadDashboardData();
+        populateYearDropdowns();
+        loadUniqueCreationDates();
+      }
 
       async function loadDropdowns() {
         try {
@@ -216,6 +328,17 @@
         const select = document.getElementById(elementId);
         select.innerHTML = `<option value="">${defaultText}</option>`;
         (options || []).forEach(opt => select.add(new Option(opt, opt)));
+      }
+      
+      function populateYearDropdowns() {
+          const currentYear = new Date().getFullYear();
+          const select = document.getElementById('reportYear');
+          select.innerHTML = '';
+          for (let i = 0; i < 5; i++) {
+              const year = currentYear - i;
+              select.add(new Option(year, year));
+          }
+          loadUsageReport();
       }
 
       function addNewOption(elementId, promptText) {
@@ -236,19 +359,28 @@
         const codeType = document.getElementById('importCodeType').value;
         const expiryDate = document.getElementById('expiryDate').value;
         if (!file || !codeType || !expiryDate) return alert('กรุณากรอกข้อมูลนำเข้าให้ครบ');
+        
         const reader = new FileReader();
         reader.onload = async (e) => {
-            const json = XLSX.utils.sheet_to_json(XLSX.read(e.target.result, {type: 'array'}).Sheets[XLSX.read(e.target.result, {type: 'array'}).SheetNames[0]], {defval: ""});
-            // ===== START: ส่วนที่แก้ไข ลบ ' ตอนนำเข้า =====
-            const codes = json.map(row => String(row.code).replace(/^'/, ''))
-                              .filter(c => c !== null && c !== undefined && c !== '');
-            // ===== END: ส่วนที่แก้ไข ลบ ' ตอนนำเข้า =====
-            if(codes.length === 0) return alert("ไม่พบข้อมูลในคอลัมน์ 'code'");
+            const workbook = XLSX.read(e.target.result, {type: 'array'});
+            const sheetName = workbook.SheetNames[0];
+            const worksheet = workbook.Sheets[sheetName];
+            const json = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+            const codes = json.slice(1).map(row => row[0]).filter(c => c !== null && c !== undefined && String(c).trim() !== '').map(c => String(c).trim().replace(/^'/, ''));
+
+            if (codes.length === 0) return alert("ไม่พบข้อมูลโค้ดในคอลัมน์แรกของไฟล์ Excel");
+
             try {
+                const duplicates = await callApi('checkForDuplicates', { codes });
+                if (duplicates.length > 0) {
+                    const duplicateList = duplicates.map(d => d.code).join(', ');
+                    alert(`พบโค้ดซ้ำในระบบ (ที่ยังไม่ถูกยกเลิก): ${duplicateList}\nกรุณาตรวจสอบไฟล์และลองอีกครั้ง`);
+                    return;
+                }
                 const result = await callApi('importCodes', { codes, codeType, expiryDate });
                 alert(result.message);
                 document.getElementById('xlsFile').value = '';
-                loadDropdowns();
+                initializeAppData();
             } catch (error) { console.error("Import failed:", error); }
         };
         reader.readAsArrayBuffer(file);
@@ -282,42 +414,196 @@
           loadDropdowns();
         } catch (error) { console.error("Use code failed:", error); }
       }
+      
+      async function loadUniqueCreationDates() {
+          try {
+              const dates = await callApi('getUniqueCreationDates');
+              populateSelect('manageFilterDate', dates, 'ทุกวันที่');
+          } catch(error) { console.error("Failed to load unique creation dates:", error); }
+      }
 
-      // ===== START: ฟังก์ชันใหม่สำหรับ Export to Excel =====
-      async function handleExport() {
+      async function loadCodesForManagement() {
+        const filterDate = document.getElementById('manageFilterDate').value;
+        const filterStatus = document.getElementById('manageFilterStatus').value;
+        const filterSearch = document.getElementById('manageFilterSearch').value;
+        const tableBody = document.getElementById('manageCodesTableBody');
+        const colspan = 6;
+        tableBody.innerHTML = `<tr><td colspan="${colspan}" class="text-center">กำลังโหลดข้อมูล...</td></tr>`;
         try {
-            const data = await callApi('exportData');
-            if (data.length === 0) {
-                alert('ไม่มีข้อมูลสำหรับ Export');
+            const codes = await callApi('getCodesForManagement', { creationDate: filterDate, status: filterStatus, searchTerm: filterSearch });
+            if (codes.length === 0) {
+                tableBody.innerHTML = `<tr><td colspan="${colspan}" class="text-center">ไม่พบข้อมูลตามเงื่อนไขที่เลือก</td></tr>`;
                 return;
             }
-
-            // แปลง Header และจัดรูปแบบข้อมูลให้สวยงาม
-            const formattedData = data.map(row => ({
-                'โค้ด': String(row.code).replace(/^'/, ''),
-                'ประเภทโค้ด': row.code_type,
-                'สถานะ': row.status,
-                'วันหมดอายุ': row.expiry_date,
-                'สาขาที่ใช้': row.branch_id,
-                'วันที่ใช้': row.used_at ? new Date(row.used_at).toLocaleString('th-TH') : '',
-                'ผู้บันทึก': row.admin_name,
-                'หมายเหตุ': row.notes,
-                'วันที่สร้าง': new Date(row.created_at).toLocaleString('th-TH')
-            }));
-
-            const worksheet = XLSX.utils.json_to_sheet(formattedData);
-            const workbook = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(workbook, worksheet, "CodeReport");
-            
-            // สร้างชื่อไฟล์พร้อมวันที่ปัจจุบัน
-            const today = new Date().toISOString().slice(0, 10);
-            XLSX.writeFile(workbook, `CodeReport_${today}.xlsx`);
-
+            tableBody.innerHTML = '';
+            codes.forEach(code => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td><input type="checkbox" class="code-checkbox" data-code="${String(code.code).replace(/^'/, '')}"></td><td>${String(code.code).replace(/^'/, '')}</td><td>${code.code_type || ''}</td><td>${code.status}</td><td>${new Date(code.created_at).toLocaleDateString('th-TH')}</td><td>${new Date(code.expiry_date).toLocaleDateString('th-TH')}</td>`;
+                tableBody.appendChild(tr);
+            });
         } catch (error) {
-            console.error("Export failed:", error);
+            console.error("Failed to load codes for management:", error);
+            tableBody.innerHTML = `<tr><td colspan="${colspan}" class="text-center text-danger">เกิดข้อผิดพลาดในการโหลดข้อมูล</td></tr>`;
         }
       }
-      // ===== END: ฟังก์ชันใหม่สำหรับ Export to Excel =====
+
+      function toggleAllCheckboxes(checked) { document.querySelectorAll('.code-checkbox').forEach(checkbox => checkbox.checked = checked); }
+
+      async function handleCancelCodes() {
+          const selectedCheckboxes = document.querySelectorAll('.code-checkbox:checked');
+          if (selectedCheckboxes.length === 0) { return alert('กรุณาเลือกโค้ดที่ต้องการยกเลิก'); }
+          if (!confirm(`คุณต้องการยกเลิกโค้ดจำนวน ${selectedCheckboxes.length} รายการใช่หรือไม่?`)) { return; }
+          const codesToCancel = Array.from(selectedCheckboxes).map(cb => cb.dataset.code);
+          try {
+              const result = await callApi('cancelCodes', { codes: codesToCancel });
+              alert(result.message);
+              loadCodesForManagement();
+              initializeAppData();
+          } catch (error) { console.error("Failed to cancel codes:", error); }
+      }
+
+      async function loadDashboardData() {
+        const dashboardContainer = document.getElementById('dashboard-container');
+        dashboardContainer.innerHTML = '<p class="text-center">กำลังโหลดข้อมูล Dashboard...</p>';
+        try {
+            const data = await callApi('getAllDataForReport');
+            const today = new Date(); today.setHours(0, 0, 0, 0);
+            const summary = data.reduce((acc, code) => {
+                const type = code.code_type || 'ไม่ระบุประเภท';
+                if (!acc[type]) { acc[type] = { total: 0, used: 0, expired: 0 }; }
+                acc[type].total++;
+                if (code.status === 'ใช้แล้ว') { acc[type].used++; } 
+                else if (code.status === 'ยังไม่ใช้' && new Date(code.expiry_date) < today) { acc[type].expired++; }
+                return acc;
+            }, {});
+
+            dashboardSummaryData = {};
+            Object.keys(summary).forEach(type => {
+                const counts = summary[type];
+                const remaining = counts.total - counts.used - counts.expired;
+                dashboardSummaryData[type] = { ...counts, remaining };
+            });
+
+            dashboardContainer.innerHTML = '';
+            if (Object.keys(dashboardSummaryData).length === 0) {
+                dashboardContainer.innerHTML = '<p class="text-center text-secondary">ไม่พบข้อมูลโค้ดในระบบ</p>';
+                return;
+            }
+            
+            for (const [type, counts] of Object.entries(dashboardSummaryData)) {
+                const groupHtml = `<div class="dashboard-group mb-4"><h5>ประเภท: ${type}</h5><div class="row"><div class="col-6 col-sm-3"><div class="dashboard-card-small card-total"><div class="icon"><i class="fas fa-ticket-alt"></i></div><h4>${counts.total}</h4><p>ทั้งหมด</p></div></div><div class="col-6 col-sm-3"><div class="dashboard-card-small card-used"><div class="icon"><i class="fas fa-check-circle"></i></div><h4>${counts.used}</h4><p>ใช้ไปแล้ว</p></div></div><div class="col-6 col-sm-3"><div class="dashboard-card-small card-expired"><div class="icon"><i class="fas fa-calendar-times"></i></div><h4>${counts.expired}</h4><p>หมดอายุ</p></div></div><div class="col-6 col-sm-3"><div class="dashboard-card-small card-remaining"><div class="icon"><i class="fas fa-hourglass-half"></i></div><h4>${counts.remaining}</h4><p>คงเหลือ</p></div></div></div></div>`;
+                dashboardContainer.innerHTML += groupHtml;
+            }
+        } catch (error) {
+            console.error("Failed to load dashboard data:", error);
+            dashboardContainer.innerHTML = '<p class="text-center text-danger">เกิดข้อผิดพลาดในการโหลดข้อมูล</p>';
+        }
+      }
+
+      // ===== START: แก้ไขฟังก์ชันสรุปการใช้งานรายเดือน =====
+      async function loadUsageReport() {
+          const year = document.getElementById('reportYear').value;
+          const tableBody = document.getElementById('usageReportTableBody');
+          const colspan = 14;
+          tableBody.innerHTML = `<tr><td colspan="${colspan}" class="text-center">กำลังโหลดข้อมูล...</td></tr>`;
+          
+          try {
+              const allData = await callApi('getAllDataForReport');
+              const usageData = allData.filter(c => c.status === 'ใช้แล้ว' && new Date(c.used_at).getFullYear() == year);
+
+              if(usageData.length === 0) {
+                  tableBody.innerHTML = `<tr><td colspan="${colspan}" class="text-center">ไม่พบข้อมูลการใช้งานในปี ${year}</td></tr>`;
+                  return;
+              }
+
+              // 1. สรุปผลรวมตามประเภทและเดือน
+              monthlyUsageSummaryData = usageData.reduce((acc, current) => {
+                  const type = current.code_type || 'ไม่ระบุประเภท';
+                  const month = new Date(current.used_at).getMonth() + 1; // 1-12
+                  
+                  if (!acc[type]) {
+                      // สร้างโครงสร้างข้อมูลสำหรับประเภทโค้ดใหม่
+                      acc[type] = { 1:0, 2:0, 3:0, 4:0, 5:0, 6:0, 7:0, 8:0, 9:0, 10:0, 11:0, 12:0, total: 0 };
+                  }
+                  
+                  acc[type][month]++;
+                  acc[type].total++;
+                  return acc;
+              }, {});
+
+              // 2. สร้าง HTML แสดงผลในตาราง
+              tableBody.innerHTML = '';
+              for (const [type, monthlyCounts] of Object.entries(monthlyUsageSummaryData)) {
+                  const tr = document.createElement('tr');
+                  let cells = `<td>${type}</td>`;
+                  for (let i = 1; i <= 12; i++) {
+                      cells += `<td>${monthlyCounts[i]}</td>`;
+                  }
+                  cells += `<td><strong>${monthlyCounts.total}</strong></td>`;
+                  tr.innerHTML = cells;
+                  tableBody.appendChild(tr);
+              }
+          } catch(error) {
+              console.error("Failed to load usage report:", error);
+              tableBody.innerHTML = `<tr><td colspan="${colspan}" class="text-center text-danger">เกิดข้อผิดพลาดในการโหลดข้อมูล</td></tr>`;
+          }
+      }
+      // ===== END: แก้ไขฟังก์ชัน =====
+
+      async function handleExportAllData() {
+          if (!confirm("คุณต้องการ Export ข้อมูลดิบทั้งหมดจากฐานข้อมูลใช่หรือไม่?")) { return; }
+          try {
+              const data = await callApi('exportAllRawData');
+              if (!data || data.length === 0) { return alert('ไม่มีข้อมูลสำหรับ Export'); }
+              const worksheet = XLSX.utils.json_to_sheet(data);
+              const workbook = XLSX.utils.book_new();
+              XLSX.utils.book_append_sheet(workbook, worksheet, "AllCodesData");
+              const today = new Date().toISOString().slice(0, 10);
+              XLSX.writeFile(workbook, `AllCodes_RawData_${today}.xlsx`);
+          } catch (error) { console.error("Export all data failed:", error); }
+      }
+
+      async function handleExport(type) {
+        try {
+            let dataToExport = [];
+            let fileName;
+            const today = new Date().toISOString().slice(0, 10);
+
+            if(type === 'dashboard') {
+                if (Object.keys(dashboardSummaryData).length === 0) { return alert('ไม่มีข้อมูล Dashboard สำหรับ Export'); }
+                for (const [codeType, counts] of Object.entries(dashboardSummaryData)) {
+                    dataToExport.push({ 'ประเภทโค้ด': codeType, 'ทั้งหมด': counts.total, 'ใช้ไปแล้ว': counts.used, 'หมดอายุ': counts.expired, 'คงเหลือ': counts.remaining });
+                }
+                fileName = `DashboardReport_${today}.xlsx`;
+
+            // ===== START: แก้ไขการ Export ตารางรายเดือน =====
+            } else if (type === 'usage_report') {
+                if (Object.keys(monthlyUsageSummaryData).length === 0) { return alert('ไม่มีข้อมูลในตารางให้ Export'); }
+                const monthHeaders = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+                for (const [type, counts] of Object.entries(monthlyUsageSummaryData)) {
+                    const rowData = { 'ประเภทโค้ด': type };
+                    for (let i = 0; i < 12; i++) {
+                        rowData[monthHeaders[i]] = counts[i + 1];
+                    }
+                    rowData['รวม'] = counts.total;
+                    dataToExport.push(rowData);
+                }
+                const year = document.getElementById('reportYear').value;
+                fileName = `UsageReport_${year}_${today}.xlsx`;
+            // ===== END: แก้ไข =====
+            } else { return; }
+
+            if (dataToExport.length === 0) { return alert('ไม่มีข้อมูลสำหรับ Export'); }
+
+            const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Report");
+            XLSX.writeFile(workbook, fileName);
+        } catch (error) {
+            console.error("Export failed:", error);
+            alert("Export ไม่สำเร็จ: " + error.message);
+        }
+      }
     </script>
 </body>
 </html>
