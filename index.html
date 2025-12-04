@@ -41,6 +41,24 @@
       .card-remaining { background-color: #e3f2fd; } .card-remaining .icon { color: var(--theme-info); }
       .table-report-monthly th, .table-report-monthly td { text-align: center; vertical-align: middle; }
       .table-report-monthly th:first-child, .table-report-monthly td:first-child { text-align: left; }
+
+      /* ===== START: เพิ่มสไตล์สำหรับปรับการแสดงผลในมือถือ ===== */
+      @media (max-width: 576px) {
+        .nav-tabs .nav-link {
+          display: flex;
+          flex-direction: column; /* เรียงไอคอนกับข้อความในแนวตั้ง */
+          align-items: center;
+          justify-content: center;
+          font-size: 0.8rem; /* ลดขนาดตัวอักษร */
+          padding: 0.5rem 0.25rem;
+          height: 60px; /* กำหนดความสูงให้เท่ากัน */
+        }
+        .nav-tabs .nav-link i.fas {
+          margin-bottom: 4px; /* เพิ่มระยะห่างระหว่างไอคอนกับข้อความ */
+          font-size: 1.1rem;
+        }
+      }
+      /* ===== END: สไตล์สำหรับมือถือ ===== */
     </style>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -447,7 +465,6 @@
           } catch(error) { console.error("Failed to load unique creation dates:", error); }
       }
 
-      // ===== START: แก้ไขฟังก์ชันให้แสดงสถานะ "หมดอายุ" ในตาราง =====
       async function loadCodesForManagement() {
         const filterDate = document.getElementById('manageFilterDate').value;
         const filterStatus = document.getElementById('manageFilterStatus').value;
@@ -461,27 +478,15 @@
                 tableBody.innerHTML = `<tr><td colspan="${colspan}" class="text-center">ไม่พบข้อมูลตามเงื่อนไขที่เลือก</td></tr>`;
                 return;
             }
-            
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
-
+            const today = new Date(); today.setHours(0, 0, 0, 0);
             tableBody.innerHTML = '';
             codes.forEach(code => {
                 let computedStatus = code.status;
                 if (code.status === 'ยังไม่ใช้' && new Date(code.expiry_date) < today) {
                     computedStatus = 'หมดอายุ';
                 }
-
                 const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td><input type="checkbox" class="code-checkbox" data-code="${String(code.code).replace(/^'/, '')}"></td>
-                    <td>${String(code.code).replace(/^'/, '')}</td>
-                    <td>${code.code_type || ''}</td>
-                    <td>${computedStatus}</td>
-                    <td>${new Date(code.created_at).toLocaleDateString('th-TH')}</td>
-                    <td>${new Date(code.expiry_date).toLocaleDateString('th-TH')}</td>
-                    <td><button class="btn btn-sm btn-warning" onclick='openEditModal(${JSON.stringify(code)})'><i class="fas fa-edit"></i></button></td>
-                `;
+                tr.innerHTML = `<td><input type="checkbox" class="code-checkbox" data-code="${String(code.code).replace(/^'/, '')}"></td><td>${String(code.code).replace(/^'/, '')}</td><td>${code.code_type || ''}</td><td>${computedStatus}</td><td>${new Date(code.created_at).toLocaleDateString('th-TH')}</td><td>${new Date(code.expiry_date).toLocaleDateString('th-TH')}</td><td><button class="btn btn-sm btn-warning" onclick='openEditModal(${JSON.stringify(code)})'><i class="fas fa-edit"></i></button></td>`;
                 tableBody.appendChild(tr);
             });
         } catch (error) {
@@ -489,7 +494,6 @@
             tableBody.innerHTML = `<tr><td colspan="${colspan}" class="text-center text-danger">เกิดข้อผิดพลาดในการโหลดข้อมูล</td></tr>`;
         }
       }
-      // ===== END: แก้ไข =====
 
       function toggleAllCheckboxes(checked) { document.querySelectorAll('.code-checkbox').forEach(checkbox => checkbox.checked = checked); }
 
