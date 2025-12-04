@@ -39,10 +39,8 @@
       .card-used { background-color: #e9f5ea; } .card-used .icon { color: var(--theme-success); }
       .card-expired { background-color: #fff8e1; } .card-expired .icon { color: var(--theme-warning); }
       .card-remaining { background-color: #e3f2fd; } .card-remaining .icon { color: var(--theme-info); }
-      /* ===== START: เพิ่มสไตล์สำหรับตารางสรุปรายเดือน ===== */
       .table-report-monthly th, .table-report-monthly td { text-align: center; vertical-align: middle; }
       .table-report-monthly th:first-child, .table-report-monthly td:first-child { text-align: left; }
-      /* ===== END: สไตล์ใหม่ ===== */
     </style>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -101,14 +99,25 @@
             <h5 class="mb-3">จัดการสถานะโค้ด</h5>
             <div class="row">
                 <div class="col-md-3 form-group"><label>วันที่สร้าง</label><select id="manageFilterDate" class="custom-select"></select></div>
-                <div class="col-md-3 form-group"><label>สถานะ</label><select id="manageFilterStatus" class="custom-select"><option value="">ทุกสถานะ</option><option value="ยังไม่ใช้">ยังไม่ใช้</option><option value="ใช้แล้ว">ใช้แล้ว</option><option value="ยกเลิก">ยกเลิก</option></select></div>
+                <!-- ===== START: เพิ่มสถานะ "หมดอายุ" ใน dropdown ===== -->
+                <div class="col-md-3 form-group"><label>สถานะ</label><select id="manageFilterStatus" class="custom-select"><option value="">ทุกสถานะ</option><option value="ยังไม่ใช้">ยังไม่ใช้</option><option value="ใช้แล้ว">ใช้แล้ว</option><option value="หมดอายุ">หมดอายุ</option><option value="ยกเลิก">ยกเลิก</option></select></div>
+                <!-- ===== END: เพิ่ม ===== -->
                 <div class="col-md-4 form-group"><label>ค้นหาโค้ด</label><input type="text" id="manageFilterSearch" class="form-control" placeholder="กรอกโค้ดบางส่วน..."></div>
                 <div class="col-md-2 form-group d-flex align-items-end"><button class="btn btn-info w-100" onclick="loadCodesForManagement()"><i class="fas fa-filter"></i> กรอง</button></div>
             </div>
             <hr>
             <div class="table-responsive">
                 <table class="table table-sm table-hover">
-                    <thead><tr><th scope="col"><input type="checkbox" id="selectAllCheckbox" onclick="toggleAllCheckboxes(this.checked)"></th><th scope="col">โค้ด</th><th scope="col">ประเภท</th><th scope="col">สถานะ</th><th scope="col">วันที่สร้าง</th><th scope="col">วันหมดอายุ</th></tr></thead>
+                    <thead>
+                        <tr>
+                            <th scope="col"><input type="checkbox" id="selectAllCheckbox" onclick="toggleAllCheckboxes(this.checked)"></th>
+                            <th scope="col">โค้ด</th><th scope="col">ประเภท</th><th scope="col">สถานะ</th>
+                            <th scope="col">วันที่สร้าง</th><th scope="col">วันหมดอายุ</th>
+                            <!-- ===== START: เพิ่มหัวตาราง "แก้ไข" ===== -->
+                            <th scope="col">แก้ไข</th>
+                            <!-- ===== END: เพิ่ม ===== -->
+                        </tr>
+                    </thead>
                     <tbody id="manageCodesTableBody"></tbody>
                 </table>
             </div>
@@ -128,7 +137,6 @@
                 <label for="reportYear" class="col-sm-3 col-form-label">เลือกปีที่ต้องการดู:</label>
                 <div class="col-sm-9"><select class="custom-select" id="reportYear" onchange="loadUsageReport()"></select></div>
             </div>
-            <!-- ===== START: แก้ไขตารางสรุปการใช้งาน ===== -->
             <div class="table-responsive">
                 <table class="table table-bordered table-report-monthly">
                     <thead class="thead-light">
@@ -143,13 +151,46 @@
                     <tbody id="usageReportTableBody"></tbody>
                 </table>
             </div>
-            <!-- ===== END: แก้ไขตาราง ===== -->
             <button class="btn btn-success mt-3" onclick="handleExport('usage_report')"><i class="fas fa-download"></i> Export ตารางการใช้งาน</button>
         </div>
       </div>
     </div>
 
     <div id="loadingModal"><div class="spinner-border" role="status"></div></div>
+
+    <!-- ===== START: เพิ่ม HTML ของ Modal สำหรับแก้ไขโค้ด ===== -->
+    <div class="modal fade" id="editCodeModal" tabindex="-1" aria-labelledby="editCodeModalLabel" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="editCodeModalLabel">แก้ไขข้อมูลโค้ด</h5>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+          </div>
+          <div class="modal-body">
+            <form id="edit-code-form">
+              <input type="hidden" id="edit-code-id">
+              <div class="form-group">
+                <label>โค้ด</label>
+                <input type="text" id="edit-code-value" class="form-control" readonly>
+              </div>
+              <div class="form-group">
+                <label for="edit-code-type">ประเภทโค้ด</label>
+                <input type="text" id="edit-code-type" class="form-control" required>
+              </div>
+              <div class="form-group">
+                <label for="edit-expiry-date">วันหมดอายุ</label>
+                <input type="date" id="edit-expiry-date" class="form-control" required>
+              </div>
+            </form>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-dismiss="modal">ปิด</button>
+            <button type="button" class="btn btn-primary" onclick="handleUpdateCode()">บันทึกการเปลี่ยนแปลง</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- ===== END: Modal ===== -->
     
     <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
@@ -171,9 +212,7 @@
       
       let currentUser = null;
       let dashboardSummaryData = {}; 
-      // ===== START: เพิ่มตัวแปรสำหรับเก็บข้อมูลตารางสรุปรายเดือน =====
       let monthlyUsageSummaryData = {};
-      // ===== END: เพิ่ม =====
 
       _supabase.auth.onAuthStateChange((event, session) => {
         if (session) {
@@ -213,13 +252,14 @@
                     result = { codeTypes, branches };
                     break;
                 }
+                // ===== START: แก้ไข Logic การดึงโค้ดสำหรับหน้า "ใช้โค้ด" =====
                 case 'getAvailableCodes': {
-                    const today = new Date().toISOString().slice(0, 10);
-                    const { data, error } = await _supabase.from('codes').select('code').eq('code_type', payload.codeType).eq('status', 'ยังไม่ใช้').gte('expiry_date', today);
+                    const { data, error } = await _supabase.from('codes').select('code').eq('code_type', payload.codeType).eq('status', 'ยังไม่ใช้');
                     if (error) throw error;
                     result = data.map(c => String(c.code).replace(/^'/, ''));
                     break;
                 }
+                // ===== END: แก้ไข =====
                 case 'checkForDuplicates': {
                     const { data, error } = await _supabase.from('codes').select('code').in('code', payload.codes).neq('status', 'ยกเลิก');
                     if (error) throw error;
@@ -242,22 +282,28 @@
                     result = { message: `บันทึกการใช้โค้ด ${payload.code} สำเร็จ!` };
                     break;
                 }
+                // ===== START: เพิ่ม Logic การกรองสถานะ "หมดอายุ" =====
                 case 'getCodesForManagement': {
                     let query = _supabase.from('codes').select('*').order('created_at', { ascending: false });
                     if (payload.creationDate) {
-                        const startDate = payload.creationDate;
-                        const nextDay = new Date(startDate);
+                        const startDate = payload.creationDate, nextDay = new Date(startDate);
                         nextDay.setDate(nextDay.getDate() + 1);
                         const endDate = nextDay.toISOString().slice(0, 10);
                         query = query.gte('created_at', startDate).lt('created_at', endDate);
                     }
-                    if (payload.status) { query = query.eq('status', payload.status); }
+                    if (payload.status === 'หมดอายุ') {
+                        const today = new Date().toISOString().slice(0, 10);
+                        query = query.eq('status', 'ยังไม่ใช้').lt('expiry_date', today);
+                    } else if (payload.status) { 
+                        query = query.eq('status', payload.status); 
+                    }
                     if (payload.searchTerm) { query = query.ilike('code', `%${payload.searchTerm}%`); }
                     const { data, error } = await query;
                     if (error) throw error;
                     result = data;
                     break;
                 }
+                // ===== END: เพิ่ม =====
                  case 'cancelCodes': {
                     const { error } = await _supabase.from('codes').update({ status: 'ยกเลิก' }).in('code', payload.codes);
                     if (error) throw error;
@@ -283,6 +329,16 @@
                     result = data;
                     break;
                 }
+                // ===== START: เพิ่ม API Call สำหรับการอัปเดตข้อมูลโค้ด =====
+                case 'updateCodeDetails': {
+                    const { error } = await _supabase.from('codes')
+                        .update({ code_type: payload.code_type, expiry_date: payload.expiry_date })
+                        .eq('id', payload.id);
+                    if(error) throw error;
+                    result = { message: 'อัปเดตข้อมูลโค้ดสำเร็จ!' };
+                    break;
+                }
+                // ===== END: เพิ่ม =====
             }
             showLoading(false);
             return result;
@@ -359,22 +415,17 @@
         const codeType = document.getElementById('importCodeType').value;
         const expiryDate = document.getElementById('expiryDate').value;
         if (!file || !codeType || !expiryDate) return alert('กรุณากรอกข้อมูลนำเข้าให้ครบ');
-        
         const reader = new FileReader();
         reader.onload = async (e) => {
             const workbook = XLSX.read(e.target.result, {type: 'array'});
-            const sheetName = workbook.SheetNames[0];
-            const worksheet = workbook.Sheets[sheetName];
+            const worksheet = workbook.Sheets[workbook.SheetNames[0]];
             const json = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
             const codes = json.slice(1).map(row => row[0]).filter(c => c !== null && c !== undefined && String(c).trim() !== '').map(c => String(c).trim().replace(/^'/, ''));
-
             if (codes.length === 0) return alert("ไม่พบข้อมูลโค้ดในคอลัมน์แรกของไฟล์ Excel");
-
             try {
                 const duplicates = await callApi('checkForDuplicates', { codes });
                 if (duplicates.length > 0) {
-                    const duplicateList = duplicates.map(d => d.code).join(', ');
-                    alert(`พบโค้ดซ้ำในระบบ (ที่ยังไม่ถูกยกเลิก): ${duplicateList}\nกรุณาตรวจสอบไฟล์และลองอีกครั้ง`);
+                    alert(`พบโค้ดซ้ำในระบบ (ที่ยังไม่ถูกยกเลิก): ${duplicates.map(d => d.code).join(', ')}\nกรุณาตรวจสอบไฟล์และลองอีกครั้ง`);
                     return;
                 }
                 const result = await callApi('importCodes', { codes, codeType, expiryDate });
@@ -399,12 +450,7 @@
       }
 
       async function handleUseCode() {
-        const usageData = {
-          code: document.getElementById('availableCodes').value,
-          branch: document.getElementById('branch').value,
-          useDate: document.getElementById('useDate').value,
-          notes: document.getElementById('notes').value
-        };
+        const usageData = { code: document.getElementById('availableCodes').value, branch: document.getElementById('branch').value, useDate: document.getElementById('useDate').value, notes: document.getElementById('notes').value };
         if (!usageData.code || !usageData.branch || !usageData.useDate) return alert('กรุณากรอกข้อมูลการใช้งานให้ครบ');
         try {
           const result = await callApi('useCode', usageData);
@@ -427,7 +473,7 @@
         const filterStatus = document.getElementById('manageFilterStatus').value;
         const filterSearch = document.getElementById('manageFilterSearch').value;
         const tableBody = document.getElementById('manageCodesTableBody');
-        const colspan = 6;
+        const colspan = 7; // ===== แก้ไข: เพิ่มจำนวนคอลัมน์สำหรับปุ่มแก้ไข =====
         tableBody.innerHTML = `<tr><td colspan="${colspan}" class="text-center">กำลังโหลดข้อมูล...</td></tr>`;
         try {
             const codes = await callApi('getCodesForManagement', { creationDate: filterDate, status: filterStatus, searchTerm: filterSearch });
@@ -438,7 +484,16 @@
             tableBody.innerHTML = '';
             codes.forEach(code => {
                 const tr = document.createElement('tr');
-                tr.innerHTML = `<td><input type="checkbox" class="code-checkbox" data-code="${String(code.code).replace(/^'/, '')}"></td><td>${String(code.code).replace(/^'/, '')}</td><td>${code.code_type || ''}</td><td>${code.status}</td><td>${new Date(code.created_at).toLocaleDateString('th-TH')}</td><td>${new Date(code.expiry_date).toLocaleDateString('th-TH')}</td>`;
+                // ===== START: เพิ่มปุ่มแก้ไขในตาราง =====
+                // ใช้ JSON.stringify เพื่อส่ง object ทั้งหมดไปที่ฟังก์ชัน
+                tr.innerHTML = `
+                    <td><input type="checkbox" class="code-checkbox" data-code="${String(code.code).replace(/^'/, '')}"></td>
+                    <td>${String(code.code).replace(/^'/, '')}</td><td>${code.code_type || ''}</td><td>${code.status}</td>
+                    <td>${new Date(code.created_at).toLocaleDateString('th-TH')}</td>
+                    <td>${new Date(code.expiry_date).toLocaleDateString('th-TH')}</td>
+                    <td><button class="btn btn-sm btn-warning" onclick='openEditModal(${JSON.stringify(code)})'><i class="fas fa-edit"></i></button></td>
+                `;
+                // ===== END: เพิ่ม =====
                 tableBody.appendChild(tr);
             });
         } catch (error) {
@@ -461,7 +516,42 @@
               initializeAppData();
           } catch (error) { console.error("Failed to cancel codes:", error); }
       }
+      
+      // ===== START: เพิ่มฟังก์ชันสำหรับจัดการ Modal แก้ไข =====
+      function openEditModal(codeObject) {
+          document.getElementById('edit-code-id').value = codeObject.id;
+          document.getElementById('edit-code-value').value = String(codeObject.code).replace(/^'/, '');
+          document.getElementById('edit-code-type').value = codeObject.code_type || '';
+          // แปลง format วันที่สำหรับ input type="date" (YYYY-MM-DD)
+          document.getElementById('edit-expiry-date').value = codeObject.expiry_date.slice(0, 10);
+          
+          $('#editCodeModal').modal('show');
+      }
 
+      async function handleUpdateCode() {
+          const payload = {
+              id: document.getElementById('edit-code-id').value,
+              code_type: document.getElementById('edit-code-type').value,
+              expiry_date: document.getElementById('edit-expiry-date').value
+          };
+
+          if (!payload.code_type || !payload.expiry_date) {
+              return alert('กรุณากรอกข้อมูลให้ครบถ้วน');
+          }
+
+          try {
+              const result = await callApi('updateCodeDetails', payload);
+              alert(result.message);
+              $('#editCodeModal').modal('hide');
+              loadCodesForManagement(); // รีเฟรชตาราง
+              initializeAppData(); // รีเฟรชข้อมูลทั้งหมด
+          } catch (error) {
+              console.error("Update failed:", error);
+          }
+      }
+      // ===== END: ฟังก์ชัน Modal =====
+
+      // ===== START: แก้ไขฟังก์ชัน Dashboard ให้นำ "หมดอายุ" กลับมา =====
       async function loadDashboardData() {
         const dashboardContainer = document.getElementById('dashboard-container');
         dashboardContainer.innerHTML = '<p class="text-center">กำลังโหลดข้อมูล Dashboard...</p>';
@@ -499,14 +589,13 @@
             dashboardContainer.innerHTML = '<p class="text-center text-danger">เกิดข้อผิดพลาดในการโหลดข้อมูล</p>';
         }
       }
+      // ===== END: แก้ไข =====
 
-      // ===== START: แก้ไขฟังก์ชันสรุปการใช้งานรายเดือน =====
       async function loadUsageReport() {
           const year = document.getElementById('reportYear').value;
           const tableBody = document.getElementById('usageReportTableBody');
           const colspan = 14;
           tableBody.innerHTML = `<tr><td colspan="${colspan}" class="text-center">กำลังโหลดข้อมูล...</td></tr>`;
-          
           try {
               const allData = await callApi('getAllDataForReport');
               const usageData = allData.filter(c => c.status === 'ใช้แล้ว' && new Date(c.used_at).getFullYear() == year);
@@ -516,29 +605,22 @@
                   return;
               }
 
-              // 1. สรุปผลรวมตามประเภทและเดือน
               monthlyUsageSummaryData = usageData.reduce((acc, current) => {
                   const type = current.code_type || 'ไม่ระบุประเภท';
-                  const month = new Date(current.used_at).getMonth() + 1; // 1-12
-                  
+                  const month = new Date(current.used_at).getMonth() + 1; 
                   if (!acc[type]) {
-                      // สร้างโครงสร้างข้อมูลสำหรับประเภทโค้ดใหม่
                       acc[type] = { 1:0, 2:0, 3:0, 4:0, 5:0, 6:0, 7:0, 8:0, 9:0, 10:0, 11:0, 12:0, total: 0 };
                   }
-                  
                   acc[type][month]++;
                   acc[type].total++;
                   return acc;
               }, {});
 
-              // 2. สร้าง HTML แสดงผลในตาราง
               tableBody.innerHTML = '';
               for (const [type, monthlyCounts] of Object.entries(monthlyUsageSummaryData)) {
                   const tr = document.createElement('tr');
                   let cells = `<td>${type}</td>`;
-                  for (let i = 1; i <= 12; i++) {
-                      cells += `<td>${monthlyCounts[i]}</td>`;
-                  }
+                  for (let i = 1; i <= 12; i++) { cells += `<td>${monthlyCounts[i]}</td>`; }
                   cells += `<td><strong>${monthlyCounts.total}</strong></td>`;
                   tr.innerHTML = cells;
                   tableBody.appendChild(tr);
@@ -548,7 +630,6 @@
               tableBody.innerHTML = `<tr><td colspan="${colspan}" class="text-center text-danger">เกิดข้อผิดพลาดในการโหลดข้อมูล</td></tr>`;
           }
       }
-      // ===== END: แก้ไขฟังก์ชัน =====
 
       async function handleExportAllData() {
           if (!confirm("คุณต้องการ Export ข้อมูลดิบทั้งหมดจากฐานข้อมูลใช่หรือไม่?")) { return; }
@@ -569,28 +650,25 @@
             let fileName;
             const today = new Date().toISOString().slice(0, 10);
 
+            // ===== START: แก้ไขการ Export Dashboard ให้นำ "หมดอายุ" กลับมา =====
             if(type === 'dashboard') {
                 if (Object.keys(dashboardSummaryData).length === 0) { return alert('ไม่มีข้อมูล Dashboard สำหรับ Export'); }
                 for (const [codeType, counts] of Object.entries(dashboardSummaryData)) {
                     dataToExport.push({ 'ประเภทโค้ด': codeType, 'ทั้งหมด': counts.total, 'ใช้ไปแล้ว': counts.used, 'หมดอายุ': counts.expired, 'คงเหลือ': counts.remaining });
                 }
                 fileName = `DashboardReport_${today}.xlsx`;
-
-            // ===== START: แก้ไขการ Export ตารางรายเดือน =====
+            // ===== END: แก้ไข =====
             } else if (type === 'usage_report') {
                 if (Object.keys(monthlyUsageSummaryData).length === 0) { return alert('ไม่มีข้อมูลในตารางให้ Export'); }
                 const monthHeaders = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
                 for (const [type, counts] of Object.entries(monthlyUsageSummaryData)) {
                     const rowData = { 'ประเภทโค้ด': type };
-                    for (let i = 0; i < 12; i++) {
-                        rowData[monthHeaders[i]] = counts[i + 1];
-                    }
+                    for (let i = 0; i < 12; i++) { rowData[monthHeaders[i]] = counts[i + 1]; }
                     rowData['รวม'] = counts.total;
                     dataToExport.push(rowData);
                 }
                 const year = document.getElementById('reportYear').value;
                 fileName = `UsageReport_${year}_${today}.xlsx`;
-            // ===== END: แก้ไข =====
             } else { return; }
 
             if (dataToExport.length === 0) { return alert('ไม่มีข้อมูลสำหรับ Export'); }
