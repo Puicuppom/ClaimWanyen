@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบจัดการโค้ด</title>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    
+    <style>
+      :root {
+        --theme-pink: #F8C8DC; --theme-pink-hover: #f7b4d1; --theme-pink-light: #FFF0F5;
+        --theme-dark-text: #4A4A4A; --theme-border: #E0E0E0;
+      }
+      body { background-color: var(--theme-pink-light); color: var(--theme-dark-text); font-family: 'Kanit', sans-serif; }
+      .container { max-width: 500px; background-color: #ffffff; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); padding: 0; margin: 2rem auto; overflow: hidden; }
+      .main-header { background-color: var(--theme-pink); color: white; padding: 1.5rem; text-align: center; display: flex; justify-content: space-between; align-items: center; }
+      .nav-tabs { border-bottom: none; background-color: var(--theme-pink-light); padding: 8px; border-radius: 10px; margin: 1.5rem 1.5rem 0 1.5rem; }
+      .nav-tabs .nav-item { flex: 1; text-align: center; }
+      .nav-tabs .nav-link { border: none; border-radius: 8px; color: var(--theme-dark-text); padding: 0.75rem; font-weight: 500; transition: all 0.3s ease; margin: 0 4px; }
+      .nav-tabs .nav-link:not(.active):hover { background-color: #ffffff; color: var(--theme-pink); }
+      .nav-tabs .nav-link.active { background-color: var(--theme-pink); color: white; box-shadow: 0 4px 8px rgba(248, 200, 220, 0.6); }
+      .tab-content, #auth-container .card-body { padding: 1.5rem; }
+      .form-group label { font-weight: 500; margin-bottom: 0.5rem; }
+      .form-control, .custom-select { border-radius: 8px; border: 1px solid var(--theme-border); padding: 0.75rem 1rem; height: auto; }
+      .form-control:focus { border-color: var(--theme-pink); box-shadow: 0 0 0 0.2rem rgba(248, 200, 220, 0.5); }
+      .btn-custom { background-color: var(--theme-pink); border-color: var(--theme-pink); color: white; font-weight: 500; padding: 0.75rem; border-radius: 8px; width: 100%; transition: background-color 0.2s; }
+      .btn-custom:hover { background-color: var(--theme-pink-hover); border-color: var(--theme-pink-hover); color: white; }
+      #logoutBtn { background: none; border: none; color: white; font-size: 1.2rem; cursor: pointer; }
+      #loadingModal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(255, 255, 255, 0.7); z-index: 1050; align-items: center; justify-content: center; }
+      .spinner-border { color: var(--theme-pink); }
+    </style>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+    
+    <!-- ===== START: ส่วนที่แก้ไข UI หน้า Login ===== -->
+    <div class="container" id="auth-container" style="display: none;">
+        <div class="main-header"><h2><i class="fas fa-lock"></i> ระบบจัดการโค้ด</h2></div>
+        <div class="card-body">
+            <form id="login-form">
+                <h5 class="mb-4 text-center text-secondary">กรุณาเข้าสู่ระบบเพื่อใช้งาน</h5>
+                <div class="form-group">
+                    <label for="email">อีเมล</label>
+                    <input type="email" id="email" class="form-control" required placeholder="example@email.com">
+                </div>
+                <div class="form-group">
+                    <label for="password">รหัสผ่าน</label>
+                    <input type="password" id="password" class="form-control" required placeholder="••••••••">
+                </div>
+                <button type="submit" class="btn btn-custom mt-3"><i class="fas fa-sign-in-alt"></i> เข้าสู่ระบบ</button>
+            </form>
+        </div>
+    </div>
+    <!-- ===== END: ส่วนที่แก้ไข UI หน้า Login ===== -->
+
+
+    <!-- ส่วนของแอปพลิเคชันหลัก (จะแสดงเมื่อล็อกอินแล้ว) -->
+    <div class="container" id="app-container" style="display: none;">
+      <div class="main-header">
+        <h2><i class="fas fa-ticket-alt"></i> ระบบจัดการโค้ด</h2>
+        <button id="logoutBtn" title="ออกจากระบบ"><i class="fas fa-sign-out-alt"></i></button>
+      </div>
+      <ul class="nav nav-tabs" id="myTab" role="tablist">
+        <li class="nav-item"><a class="nav-link active" data-toggle="tab" href="#use-code"><i class="fas fa-hand-pointer"></i> ใช้โค้ด</a></li>
+        <li class="nav-item"><a class="nav-link" data-toggle="tab" href="#import"><i class="fas fa-file-upload"></i> นำเข้าโค้ด</a></li>
+      </ul>
+      <div class="tab-content">
+        <div class="tab-pane fade show active" id="use-code">
+            <h5 class="mb-3">เลือกและบันทึกการใช้งาน</h5>
+            <div class="form-group"><label for="filterCodeType">ประเภทโค้ด</label><select class="custom-select" id="filterCodeType" onchange="loadAvailableCodes()"><option value="">-- กรุณาเลือก --</option></select></div>
+            <div class="form-group"><label for="availableCodes">โค้ดที่ใช้งานได้</label><div class="input-group"><select class="custom-select" id="availableCodes"></select><div class="input-group-append"><button class="btn btn-outline-secondary" id="copyCodeBtn" onclick="copySelectedCode()" disabled><i class="far fa-copy"></i></button></div></div></div>
+            <hr class="my-4">
+            <div class="form-group"><label for="branch">เลขสาขา</label><div class="input-group"><select class="custom-select" id="branch"></select><div class="input-group-append"><button class="btn btn-outline-secondary" onclick="addNewOption('branch', 'เลขสาขาใหม่')">+</button></div></div></div>
+            <div class="form-group"><label for="useDate">วันที่ใช้งาน</label><input type="date" class="form-control" id="useDate"></div>
+            <div class="form-group"><label for="notes">หมายเหตุ (ถ้ามี)</label><textarea class="form-control" id="notes" rows="2"></textarea></div>
+            <button class="btn btn-custom mt-3" onclick="handleUseCode()"><i class="fas fa-check-circle"></i> บันทึกการใช้งาน</button>
+        </div>
+        <div class="tab-pane fade" id="import">
+            <h5 class="mb-3">นำเข้าโค้ดจากไฟล์ Excel</h5>
+            <div class="form-group"><label for="xlsFile">เลือกไฟล์ (.xls, .xlsx)</label><input type="file" class="form-control-file" id="xlsFile" accept=".xls, .xlsx"></div>
+            <div class="form-group"><label for="importCodeType">ประเภทโค้ดสำหรับไฟล์นี้</label><div class="input-group"><select class="custom-select" id="importCodeType"></select><div class="input-group-append"><button class="btn btn-outline-secondary" onclick="addNewOption('importCodeType', 'ประเภทโค้ดใหม่')">+</button></div></div></div>
+            <div class="form-group"><label for="expiryDate">วันหมดอายุสำหรับไฟล์นี้</label><input type="date" class="form-control" id="expiryDate"></div>
+            <button class="btn btn-custom mt-3" onclick="handleImport()"><i class="fas fa-file-import"></i> นำเข้าข้อมูล</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="loadingModal"><div class="spinner-border" role="status"></div></div>
+    
+    <!-- Scripts -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <script>
+      // ===================================================================================
+      // ****** กรุณากรอก SUPABASE URL และ KEY ของคุณที่นี่ ******
+      //
+      const SUPABASE_URL = 'https://hndcotcxrylyamfjgjwx.supabase.co'; 
+      const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhuZGNvdGN4cnlseWFtZmpnand4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ4MzI1MjUsImV4cCI6MjA4MDQwODUyNX0.RsdmQr3xf3R3Jb6pJU7oYVnh12CEzmjxFPytNTsWrgM';
+      //
+      // ===================================================================================
+
+      const { createClient } = supabase;
+      const _supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+      const authContainer = document.getElementById('auth-container');
+      const appContainer = document.getElementById('app-container');
+      const loginForm = document.getElementById('login-form');
+      const logoutBtn = document.getElementById('logoutBtn');
+      
+      let currentUser = null;
+
+      // === ระบบ Authentication ===
+      
+      _supabase.auth.onAuthStateChange((event, session) => {
+        if (session) {
+          currentUser = session.user;
+          showApp();
+          loadDropdowns();
+        } else {
+          currentUser = null;
+          showAuth();
+        }
+      });
+      
+      loginForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        showLoading(true);
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+        const { error } = await _supabase.auth.signInWithPassword({ email, password });
+        if (error) alert('Login ไม่สำเร็จ: ' + error.message);
+        showLoading(false);
+      });
+
+      // ลบฟังก์ชันการสมัครสมาชิกออก
+      // registerBtn is removed
+
+      logoutBtn.addEventListener('click', async () => {
+        await _supabase.auth.signOut();
+      });
+
+      function showApp() { authContainer.style.display = 'none'; appContainer.style.display = 'block'; }
+      function showAuth() { appContainer.style.display = 'none'; authContainer.style.display = 'block'; }
+
+      // === โค้ดส่วนจัดการข้อมูล (เหมือนเดิม) ===
+      
+      async function callApi(action, payload = {}) {
+        showLoading(true);
+        try {
+            let result;
+            switch(action) {
+                case 'getDropdownData': {
+                    const { data: codesData, error } = await _supabase.from('codes').select('code_type, branch_id');
+                    if (error) throw error;
+                    const codeTypes = [...new Set(codesData.map(c => c.code_type).filter(Boolean))];
+                    const branches = [...new Set(codesData.map(c => c.branch_id).filter(Boolean))].sort((a, b) => Number(a) - Number(b));
+                    result = { codeTypes, branches };
+                    break;
+                }
+                case 'getAvailableCodes': {
+                    const today = new Date().toISOString().slice(0, 10);
+                    const { data, error } = await _supabase.from('codes').select('code').eq('code_type', payload.codeType).eq('status', 'ยังไม่ใช้').gte('expiry_date', today);
+                    if (error) throw error;
+                    result = data.map(c => c.code);
+                    break;
+                }
+                case 'importCodes': {
+                    const codesToInsert = payload.codes.map(c => ({ code: c, code_type: payload.codeType, expiry_date: payload.expiryDate }));
+                    const { error } = await _supabase.from('codes').insert(codesToInsert);
+                    if (error) throw error;
+                    result = { message: `นำเข้าโค้ด ${payload.codes.length} รายการสำเร็จ!` };
+                    break;
+                }
+                case 'useCode': {
+                    const { data: updated, error } = await _supabase.from('codes')
+                        .update({ status: 'ใช้แล้ว', branch_id: payload.branch, used_at: new Date().toISOString(), notes: payload.notes, user_id: currentUser.id, admin_name: currentUser.email })
+                        .eq('code', payload.code).eq('status', 'ยังไม่ใช้').select();
+                    if (error) throw error;
+                    if (updated.length === 0) throw new Error(`โค้ด ${payload.code} ถูกใช้งานไปแล้ว`);
+                    result = { message: `บันทึกการใช้โค้ด ${payload.code} สำเร็จ!` };
+                    break;
+                }
+            }
+            showLoading(false);
+            return result;
+        } catch (error) {
+            showLoading(false);
+            alert('เกิดข้อผิดพลาด: ' + error.message);
+            throw error;
+        }
+      }
+
+      // ฟังก์ชันเดิมส่วนใหญ่ใช้ได้เหมือนเดิม
+      document.addEventListener("DOMContentLoaded", () => {
+        setTodayDate('useDate');
+        document.getElementById('availableCodes').addEventListener('change', (e) => {
+            document.getElementById('copyCodeBtn').disabled = !e.target.value;
+        });
+      });
+
+      function showLoading(show) { document.getElementById('loadingModal').style.display = show ? 'flex' : 'none'; }
+      function setTodayDate(elementId) { document.getElementById(elementId).value = new Date().toISOString().slice(0, 10); }
+
+      async function loadDropdowns() {
+        try {
+          const data = await callApi('getDropdownData');
+          populateSelect('importCodeType', data.codeTypes, '-- เลือกประเภทโค้ด --');
+          populateSelect('filterCodeType', data.codeTypes, '-- กรุณาเลือก --');
+          populateSelect('branch', data.branches, '-- เลือกเลขสาขา --');
+        } catch (error) { console.error("โหลด Dropdown ไม่สำเร็จ:", error); }
+      }
+
+      function populateSelect(elementId, options, defaultText) {
+        const select = document.getElementById(elementId);
+        select.innerHTML = `<option value="">${defaultText}</option>`;
+        (options || []).forEach(opt => select.add(new Option(opt, opt)));
+      }
+
+      function addNewOption(elementId, promptText) {
+        const newValue = prompt(`กรุณาใส่ ${promptText}:`);
+        if (newValue && newValue.trim()) {
+          const select = document.getElementById(elementId);
+          select.add(new Option(newValue, newValue, true, true));
+        }
+      }
+
+      function copySelectedCode() {
+        const code = document.getElementById('availableCodes').value;
+        if(code) navigator.clipboard.writeText(code).then(() => alert(`คัดลอกโค้ด "${code}" แล้ว`));
+      }
+
+      async function handleImport() {
+        const file = document.getElementById('xlsFile').files[0];
+        const codeType = document.getElementById('importCodeType').value;
+        const expiryDate = document.getElementById('expiryDate').value;
+        if (!file || !codeType || !expiryDate) return alert('กรุณากรอกข้อมูลนำเข้าให้ครบ');
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+            const json = XLSX.utils.sheet_to_json(XLSX.read(e.target.result, {type: 'array'}).Sheets[XLSX.read(e.target.result, {type: 'array'}).SheetNames[0]], {defval: ""});
+            const codes = json.map(row => row.code).filter(c => c !== null && c !== undefined).map(String);
+            if(codes.length === 0) return alert("ไม่พบข้อมูลในคอลัมน์ 'code'");
+            try {
+                const result = await callApi('importCodes', { codes, codeType, expiryDate });
+                alert(result.message);
+                document.getElementById('xlsFile').value = '';
+                loadDropdowns();
+            } catch (error) { console.error("Import failed:", error); }
+        };
+        reader.readAsArrayBuffer(file);
+      }
+
+      async function loadAvailableCodes() {
+        const codeType = document.getElementById('filterCodeType').value;
+        const select = document.getElementById('availableCodes');
+        document.getElementById('copyCodeBtn').disabled = true;
+        select.innerHTML = '<option value="">-- กำลังโหลด... --</option>';
+        if (!codeType) { select.innerHTML = '<option value="">-- รอเลือกประเภทโค้ด --</option>'; return; }
+        try {
+          const codes = await callApi('getAvailableCodes', { codeType });
+          populateSelect('availableCodes', codes, codes.length > 0 ? '-- เลือกโค้ด --' : '-- ไม่มีโค้ดที่ใช้งานได้ --');
+        } catch (error) { console.error("Load codes failed:", error); }
+      }
+
+      async function handleUseCode() {
+        const usageData = {
+          code: document.getElementById('availableCodes').value,
+          branch: document.getElementById('branch').value,
+          useDate: document.getElementById('useDate').value,
+          notes: document.getElementById('notes').value
+        };
+        if (!usageData.code || !usageData.branch || !usageData.useDate) return alert('กรุณากรอกข้อมูลการใช้งานให้ครบ');
+        try {
+          const result = await callApi('useCode', usageData);
+          alert(result.message);
+          document.getElementById('notes').value = '';
+          loadAvailableCodes();
+          loadDropdowns();
+        } catch (error) { console.error("Use code failed:", error); }
+      }
+    </script>
+</body>
+</html>
