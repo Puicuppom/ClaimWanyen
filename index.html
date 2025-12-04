@@ -447,6 +447,7 @@
           } catch(error) { console.error("Failed to load unique creation dates:", error); }
       }
 
+      // ===== START: แก้ไขฟังก์ชันให้แสดงสถานะ "หมดอายุ" ในตาราง =====
       async function loadCodesForManagement() {
         const filterDate = document.getElementById('manageFilterDate').value;
         const filterStatus = document.getElementById('manageFilterStatus').value;
@@ -460,10 +461,27 @@
                 tableBody.innerHTML = `<tr><td colspan="${colspan}" class="text-center">ไม่พบข้อมูลตามเงื่อนไขที่เลือก</td></tr>`;
                 return;
             }
+            
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
             tableBody.innerHTML = '';
             codes.forEach(code => {
+                let computedStatus = code.status;
+                if (code.status === 'ยังไม่ใช้' && new Date(code.expiry_date) < today) {
+                    computedStatus = 'หมดอายุ';
+                }
+
                 const tr = document.createElement('tr');
-                tr.innerHTML = `<td><input type="checkbox" class="code-checkbox" data-code="${String(code.code).replace(/^'/, '')}"></td><td>${String(code.code).replace(/^'/, '')}</td><td>${code.code_type || ''}</td><td>${code.status}</td><td>${new Date(code.created_at).toLocaleDateString('th-TH')}</td><td>${new Date(code.expiry_date).toLocaleDateString('th-TH')}</td><td><button class="btn btn-sm btn-warning" onclick='openEditModal(${JSON.stringify(code)})'><i class="fas fa-edit"></i></button></td>`;
+                tr.innerHTML = `
+                    <td><input type="checkbox" class="code-checkbox" data-code="${String(code.code).replace(/^'/, '')}"></td>
+                    <td>${String(code.code).replace(/^'/, '')}</td>
+                    <td>${code.code_type || ''}</td>
+                    <td>${computedStatus}</td>
+                    <td>${new Date(code.created_at).toLocaleDateString('th-TH')}</td>
+                    <td>${new Date(code.expiry_date).toLocaleDateString('th-TH')}</td>
+                    <td><button class="btn btn-sm btn-warning" onclick='openEditModal(${JSON.stringify(code)})'><i class="fas fa-edit"></i></button></td>
+                `;
                 tableBody.appendChild(tr);
             });
         } catch (error) {
@@ -471,6 +489,7 @@
             tableBody.innerHTML = `<tr><td colspan="${colspan}" class="text-center text-danger">เกิดข้อผิดพลาดในการโหลดข้อมูล</td></tr>`;
         }
       }
+      // ===== END: แก้ไข =====
 
       function toggleAllCheckboxes(checked) { document.querySelectorAll('.code-checkbox').forEach(checkbox => checkbox.checked = checked); }
 
@@ -579,17 +598,12 @@
           }
       }
 
-      // ===== START: แก้ไขฟังก์ชัน Export ข้อมูลทั้งหมดให้คำนวณสถานะ "หมดอายุ" =====
       async function handleExportAllData() {
           if (!confirm("คุณต้องการ Export ข้อมูลทั้งหมดจากฐานข้อมูลใช่หรือไม่?")) { return; }
           try {
               const data = await callApi('exportAllRawData');
               if (!data || data.length === 0) { return alert('ไม่มีข้อมูลสำหรับ Export'); }
-              
-              const today = new Date();
-              today.setHours(0, 0, 0, 0);
-
-              // ประมวลผลข้อมูลเพื่อคำนวณสถานะ "หมดอายุ"
+              const today = new Date(); today.setHours(0, 0, 0, 0);
               const processedData = data.map(row => {
                   let computedStatus = row.status;
                   if (row.status === 'ยังไม่ใช้' && new Date(row.expiry_date) < today) {
@@ -597,7 +611,6 @@
                   }
                   return { ...row, status: computedStatus };
               });
-
               const worksheet = XLSX.utils.json_to_sheet(processedData);
               const workbook = XLSX.utils.book_new();
               XLSX.utils.book_append_sheet(workbook, worksheet, "AllCodesData");
@@ -607,7 +620,6 @@
               console.error("Export all data failed:", error); 
           }
       }
-      // ===== END: แก้ไข =====
 
       async function handleExport(type) {
         try {
