@@ -36,37 +36,32 @@
 </head>
 <body>
     
-    <!-- ===== START: ส่วนที่แก้ไข UI หน้า Login ===== -->
     <div class="container" id="auth-container" style="display: none;">
         <div class="main-header"><h2><i class="fas fa-lock"></i> ระบบจัดการโค้ด</h2></div>
         <div class="card-body">
             <form id="login-form">
                 <h5 class="mb-4 text-center text-secondary">กรุณาเข้าสู่ระบบเพื่อใช้งาน</h5>
-                <div class="form-group">
-                    <label for="email">อีเมล</label>
-                    <input type="email" id="email" class="form-control" required placeholder="example@email.com">
-                </div>
-                <div class="form-group">
-                    <label for="password">รหัสผ่าน</label>
-                    <input type="password" id="password" class="form-control" required placeholder="••••••••">
-                </div>
+                <div class="form-group"><label for="email">อีเมล</label><input type="email" id="email" class="form-control" required placeholder="example@email.com"></div>
+                <div class="form-group"><label for="password">รหัสผ่าน</label><input type="password" id="password" class="form-control" required placeholder="••••••••"></div>
                 <button type="submit" class="btn btn-custom mt-3"><i class="fas fa-sign-in-alt"></i> เข้าสู่ระบบ</button>
             </form>
         </div>
     </div>
-    <!-- ===== END: ส่วนที่แก้ไข UI หน้า Login ===== -->
 
-
-    <!-- ส่วนของแอปพลิเคชันหลัก (จะแสดงเมื่อล็อกอินแล้ว) -->
     <div class="container" id="app-container" style="display: none;">
       <div class="main-header">
         <h2><i class="fas fa-ticket-alt"></i> ระบบจัดการโค้ด</h2>
         <button id="logoutBtn" title="ออกจากระบบ"><i class="fas fa-sign-out-alt"></i></button>
       </div>
+
+      <!-- ===== START: ส่วนที่แก้ไข เพิ่มแท็บ "รายงาน" ===== -->
       <ul class="nav nav-tabs" id="myTab" role="tablist">
         <li class="nav-item"><a class="nav-link active" data-toggle="tab" href="#use-code"><i class="fas fa-hand-pointer"></i> ใช้โค้ด</a></li>
         <li class="nav-item"><a class="nav-link" data-toggle="tab" href="#import"><i class="fas fa-file-upload"></i> นำเข้าโค้ด</a></li>
+        <li class="nav-item"><a class="nav-link" data-toggle="tab" href="#report"><i class="fas fa-file-excel"></i> รายงาน</a></li>
       </ul>
+      <!-- ===== END: ส่วนที่แก้ไข เพิ่มแท็บ "รายงาน" ===== -->
+
       <div class="tab-content">
         <div class="tab-pane fade show active" id="use-code">
             <h5 class="mb-3">เลือกและบันทึกการใช้งาน</h5>
@@ -85,12 +80,18 @@
             <div class="form-group"><label for="expiryDate">วันหมดอายุสำหรับไฟล์นี้</label><input type="date" class="form-control" id="expiryDate"></div>
             <button class="btn btn-custom mt-3" onclick="handleImport()"><i class="fas fa-file-import"></i> นำเข้าข้อมูล</button>
         </div>
+        <!-- ===== START: ส่วนที่เพิ่มเข้ามาใหม่สำหรับแท็บ "รายงาน" ===== -->
+        <div class="tab-pane fade" id="report">
+            <h5 class="mb-3">ดาวน์โหลดรายงาน</h5>
+            <p class="text-secondary">คลิกปุ่มด้านล่างเพื่อดาวน์โหลดข้อมูลโค้ดทั้งหมดในระบบเป็นไฟล์ Excel (.xlsx)</p>
+            <button class="btn btn-custom mt-3" onclick="handleExport()"><i class="fas fa-download"></i> Export ข้อมูลทั้งหมดเป็น Excel</button>
+        </div>
+        <!-- ===== END: ส่วนที่เพิ่มเข้ามาใหม่สำหรับแท็บ "รายงาน" ===== -->
       </div>
     </div>
 
     <div id="loadingModal"><div class="spinner-border" role="status"></div></div>
     
-    <!-- Scripts -->
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
@@ -98,13 +99,8 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <script>
-      // ===================================================================================
-      // ****** กรุณากรอก SUPABASE URL และ KEY ของคุณที่นี่ ******
-      //
       const SUPABASE_URL = 'https://hndcotcxrylyamfjgjwx.supabase.co'; 
       const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhuZGNvdGN4cnlseWFtZmpnand4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ4MzI1MjUsImV4cCI6MjA4MDQwODUyNX0.RsdmQr3xf3R3Jb6pJU7oYVnh12CEzmjxFPytNTsWrgM';
-      //
-      // ===================================================================================
 
       const { createClient } = supabase;
       const _supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -115,8 +111,6 @@
       const logoutBtn = document.getElementById('logoutBtn');
       
       let currentUser = null;
-
-      // === ระบบ Authentication ===
       
       _supabase.auth.onAuthStateChange((event, session) => {
         if (session) {
@@ -139,18 +133,10 @@
         showLoading(false);
       });
 
-      // ลบฟังก์ชันการสมัครสมาชิกออก
-      // registerBtn is removed
-
-      logoutBtn.addEventListener('click', async () => {
-        await _supabase.auth.signOut();
-      });
-
+      logoutBtn.addEventListener('click', async () => { await _supabase.auth.signOut(); });
       function showApp() { authContainer.style.display = 'none'; appContainer.style.display = 'block'; }
       function showAuth() { appContainer.style.display = 'none'; authContainer.style.display = 'block'; }
 
-      // === โค้ดส่วนจัดการข้อมูล (เหมือนเดิม) ===
-      
       async function callApi(action, payload = {}) {
         showLoading(true);
         try {
@@ -168,7 +154,9 @@
                     const today = new Date().toISOString().slice(0, 10);
                     const { data, error } = await _supabase.from('codes').select('code').eq('code_type', payload.codeType).eq('status', 'ยังไม่ใช้').gte('expiry_date', today);
                     if (error) throw error;
-                    result = data.map(c => c.code);
+                    // ===== START: ส่วนที่แก้ไข ลบ ' ออก =====
+                    result = data.map(c => String(c.code).replace(/^'/, ''));
+                    // ===== END: ส่วนที่แก้ไข ลบ ' ออก =====
                     break;
                 }
                 case 'importCodes': {
@@ -187,6 +175,14 @@
                     result = { message: `บันทึกการใช้โค้ด ${payload.code} สำเร็จ!` };
                     break;
                 }
+                // ===== START: ส่วนที่เพิ่มเข้ามาใหม่สำหรับ Export =====
+                case 'exportData': {
+                    const { data, error } = await _supabase.from('codes').select('*').order('created_at', { ascending: false });
+                    if (error) throw error;
+                    result = data;
+                    break;
+                }
+                // ===== END: ส่วนที่เพิ่มเข้ามาใหม่สำหรับ Export =====
             }
             showLoading(false);
             return result;
@@ -197,7 +193,6 @@
         }
       }
 
-      // ฟังก์ชันเดิมส่วนใหญ่ใช้ได้เหมือนเดิม
       document.addEventListener("DOMContentLoaded", () => {
         setTodayDate('useDate');
         document.getElementById('availableCodes').addEventListener('change', (e) => {
@@ -244,7 +239,10 @@
         const reader = new FileReader();
         reader.onload = async (e) => {
             const json = XLSX.utils.sheet_to_json(XLSX.read(e.target.result, {type: 'array'}).Sheets[XLSX.read(e.target.result, {type: 'array'}).SheetNames[0]], {defval: ""});
-            const codes = json.map(row => row.code).filter(c => c !== null && c !== undefined).map(String);
+            // ===== START: ส่วนที่แก้ไข ลบ ' ตอนนำเข้า =====
+            const codes = json.map(row => String(row.code).replace(/^'/, ''))
+                              .filter(c => c !== null && c !== undefined && c !== '');
+            // ===== END: ส่วนที่แก้ไข ลบ ' ตอนนำเข้า =====
             if(codes.length === 0) return alert("ไม่พบข้อมูลในคอลัมน์ 'code'");
             try {
                 const result = await callApi('importCodes', { codes, codeType, expiryDate });
@@ -284,6 +282,42 @@
           loadDropdowns();
         } catch (error) { console.error("Use code failed:", error); }
       }
+
+      // ===== START: ฟังก์ชันใหม่สำหรับ Export to Excel =====
+      async function handleExport() {
+        try {
+            const data = await callApi('exportData');
+            if (data.length === 0) {
+                alert('ไม่มีข้อมูลสำหรับ Export');
+                return;
+            }
+
+            // แปลง Header และจัดรูปแบบข้อมูลให้สวยงาม
+            const formattedData = data.map(row => ({
+                'โค้ด': String(row.code).replace(/^'/, ''),
+                'ประเภทโค้ด': row.code_type,
+                'สถานะ': row.status,
+                'วันหมดอายุ': row.expiry_date,
+                'สาขาที่ใช้': row.branch_id,
+                'วันที่ใช้': row.used_at ? new Date(row.used_at).toLocaleString('th-TH') : '',
+                'ผู้บันทึก': row.admin_name,
+                'หมายเหตุ': row.notes,
+                'วันที่สร้าง': new Date(row.created_at).toLocaleString('th-TH')
+            }));
+
+            const worksheet = XLSX.utils.json_to_sheet(formattedData);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "CodeReport");
+            
+            // สร้างชื่อไฟล์พร้อมวันที่ปัจจุบัน
+            const today = new Date().toISOString().slice(0, 10);
+            XLSX.writeFile(workbook, `CodeReport_${today}.xlsx`);
+
+        } catch (error) {
+            console.error("Export failed:", error);
+        }
+      }
+      // ===== END: ฟังก์ชันใหม่สำหรับ Export to Excel =====
     </script>
 </body>
 </html>
