@@ -42,23 +42,21 @@
       .table-report-monthly th, .table-report-monthly td { text-align: center; vertical-align: middle; }
       .table-report-monthly th:first-child, .table-report-monthly td:first-child { text-align: left; }
 
-      /* ===== START: เพิ่มสไตล์สำหรับปรับการแสดงผลในมือถือ ===== */
       @media (max-width: 576px) {
         .nav-tabs .nav-link {
           display: flex;
-          flex-direction: column; /* เรียงไอคอนกับข้อความในแนวตั้ง */
+          flex-direction: column;
           align-items: center;
           justify-content: center;
-          font-size: 0.8rem; /* ลดขนาดตัวอักษร */
+          font-size: 0.8rem;
           padding: 0.5rem 0.25rem;
-          height: 60px; /* กำหนดความสูงให้เท่ากัน */
+          height: 60px;
         }
         .nav-tabs .nav-link i.fas {
-          margin-bottom: 4px; /* เพิ่มระยะห่างระหว่างไอคอนกับข้อความ */
+          margin-bottom: 4px;
           font-size: 1.1rem;
         }
       }
-      /* ===== END: สไตล์สำหรับมือถือ ===== */
     </style>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -106,6 +104,9 @@
         <!-- Tab: นำเข้า -->
         <div class="tab-pane fade" id="import">
             <h5 class="mb-3">นำเข้าโค้ดจากไฟล์ Excel</h5>
+            <div class="alert alert-info py-2" style="font-size: 0.9rem;">
+                <i class="fas fa-info-circle"></i> รูปแบบไฟล์: คอลัมน์ A = รหัสโค้ด, คอลัมน์ B = สถานะ (ใส่ 'ถูกใช้แล้ว' หรือ 'used' หากใช้แล้ว)
+            </div>
             <div class="form-group"><label for="xlsFile">เลือกไฟล์ (.xls, .xlsx)</label><input type="file" class="form-control-file" id="xlsFile" accept=".xls, .xlsx"></div>
             <div class="form-group"><label for="importCodeType">ประเภทโค้ดสำหรับไฟล์นี้</label><div class="input-group"><select class="custom-select" id="importCodeType"></select><div class="input-group-append"><button class="btn btn-outline-secondary" onclick="addNewOption('importCodeType', 'ประเภทโค้ดใหม่')">+</button></div></div></div>
             <div class="form-group"><label for="expiryDate">วันหมดอายุสำหรับไฟล์นี้</label><input type="date" class="form-control" id="expiryDate"></div>
@@ -258,7 +259,8 @@
                 case 'getAvailableCodes': {
                     const { data, error } = await _supabase.from('codes').select('code').eq('code_type', payload.codeType).eq('status', 'ยังไม่ใช้');
                     if (error) throw error;
-                    result = data.map(c => String(c.code).replace(/^'/, ''));
+                    // ลบ quote ทั้งหมดเพื่อการแสดงผลที่ถูกต้อง
+                    result = data.map(c => String(c.code).replace(/['"‘’“”]/g, '').replace(/&#39;/g, ''));
                     break;
                 }
                 case 'checkForDuplicates': {
@@ -268,7 +270,14 @@
                     break;
                 }
                 case 'importCodes': {
-                    const codesToInsert = payload.codes.map(c => ({ code: c, code_type: payload.codeType, expiry_date: payload.expiryDate, status: 'ยังไม่ใช้' }));
+                    const codesToInsert = payload.codes.map(c => ({ 
+                        code: c.code, 
+                        code_type: payload.codeType, 
+                        expiry_date: payload.expiryDate, 
+                        status: c.status, 
+                        used_at: c.status === 'ใช้แล้ว' ? new Date().toISOString() : null 
+                    }));
+                    
                     const { error } = await _supabase.from('codes').insert(codesToInsert);
                     if (error) throw error;
                     result = { message: `นำเข้าโค้ด ${payload.codes.length} รายการสำเร็จ!` };
@@ -412,20 +421,51 @@
         const codeType = document.getElementById('importCodeType').value;
         const expiryDate = document.getElementById('expiryDate').value;
         if (!file || !codeType || !expiryDate) return alert('กรุณากรอกข้อมูลนำเข้าให้ครบ');
+        
         const reader = new FileReader();
         reader.onload = async (e) => {
             const workbook = XLSX.read(e.target.result, {type: 'array'});
             const worksheet = workbook.Sheets[workbook.SheetNames[0]];
             const json = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-            const codes = json.slice(1).map(row => row[0]).filter(c => c !== null && c !== undefined && String(c).trim() !== '').map(c => String(c).trim().replace(/^'/, ''));
-            if (codes.length === 0) return alert("ไม่พบข้อมูลโค้ดในคอลัมน์แรกของไฟล์ Excel");
+            
+            const importData = json.slice(1).map(row => {
+                const rawCode = row[0];
+                if (rawCode === null || rawCode === undefined) return null;
+                
+                // ===== ส่วนแก้ไขใหม่: การทำความสะอาดข้อมูลที่เข้มข้นขึ้น =====
+                let cleanCode = String(rawCode);
+                
+                // 1. ลบ HTML Entity &#39; หรือ &apos; (ที่เห็นในรูป)
+                cleanCode = cleanCode.replace(/&#39;/g, '').replace(/&apos;/g, '');
+                
+                // 2. ลบ single quote ('), double quote ("), และ smart quotes (‘ ’ “ ”)
+                cleanCode = cleanCode.replace(/['"‘’“”]/g, '').trim();
+
+                if (cleanCode === '') return null;
+                // =======================================================
+
+                // ตรวจสอบสถานะ
+                let status = 'ยังไม่ใช้';
+                if (row[1]) {
+                    const statusStr = String(row[1]).trim();
+                    if (['used', 'ใช้แล้ว', 'ถูกใช้แล้ว', 'yes'].includes(statusStr.toLowerCase())) {
+                        status = 'ใช้แล้ว';
+                    }
+                }
+                
+                return { code: cleanCode, status: status };
+            }).filter(item => item !== null);
+
+            if (importData.length === 0) return alert("ไม่พบข้อมูลโค้ดในไฟล์ Excel");
+            
             try {
-                const duplicates = await callApi('checkForDuplicates', { codes });
+                const codesOnly = importData.map(c => c.code);
+                const duplicates = await callApi('checkForDuplicates', { codes: codesOnly });
                 if (duplicates.length > 0) {
                     alert(`พบโค้ดซ้ำในระบบ (ที่ยังไม่ถูกยกเลิก): ${duplicates.map(d => d.code).join(', ')}\nกรุณาตรวจสอบไฟล์และลองอีกครั้ง`);
                     return;
                 }
-                const result = await callApi('importCodes', { codes, codeType, expiryDate });
+                const result = await callApi('importCodes', { codes: importData, codeType, expiryDate });
                 alert(result.message);
                 document.getElementById('xlsFile').value = '';
                 initializeAppData();
@@ -485,8 +525,11 @@
                 if (code.status === 'ยังไม่ใช้' && new Date(code.expiry_date) < today) {
                     computedStatus = 'หมดอายุ';
                 }
+                // แสดงผลลัพธ์ที่ clean แล้วในตารางด้วย
+                const displayCode = String(code.code).replace(/['"‘’“”]/g, '').replace(/&#39;/g, '');
+                
                 const tr = document.createElement('tr');
-                tr.innerHTML = `<td><input type="checkbox" class="code-checkbox" data-code="${String(code.code).replace(/^'/, '')}"></td><td>${String(code.code).replace(/^'/, '')}</td><td>${code.code_type || ''}</td><td>${computedStatus}</td><td>${new Date(code.created_at).toLocaleDateString('th-TH')}</td><td>${new Date(code.expiry_date).toLocaleDateString('th-TH')}</td><td><button class="btn btn-sm btn-warning" onclick='openEditModal(${JSON.stringify(code)})'><i class="fas fa-edit"></i></button></td>`;
+                tr.innerHTML = `<td><input type="checkbox" class="code-checkbox" data-code="${displayCode}"></td><td>${displayCode}</td><td>${code.code_type || ''}</td><td>${computedStatus}</td><td>${new Date(code.created_at).toLocaleDateString('th-TH')}</td><td>${new Date(code.expiry_date).toLocaleDateString('th-TH')}</td><td><button class="btn btn-sm btn-warning" onclick='openEditModal(${JSON.stringify(code)})'><i class="fas fa-edit"></i></button></td>`;
                 tableBody.appendChild(tr);
             });
         } catch (error) {
@@ -512,7 +555,8 @@
       
       function openEditModal(codeObject) {
           document.getElementById('edit-code-id').value = codeObject.id;
-          document.getElementById('edit-code-value').value = String(codeObject.code).replace(/^'/, '');
+          const cleanVal = String(codeObject.code).replace(/['"‘’“”]/g, '').replace(/&#39;/g, '');
+          document.getElementById('edit-code-value').value = cleanVal;
           document.getElementById('edit-code-type').value = codeObject.code_type || '';
           document.getElementById('edit-expiry-date').value = codeObject.expiry_date.slice(0, 10);
           $('#editCodeModal').modal('show');
@@ -613,7 +657,9 @@
                   if (row.status === 'ยังไม่ใช้' && new Date(row.expiry_date) < today) {
                       computedStatus = 'หมดอายุ';
                   }
-                  return { ...row, status: computedStatus };
+                  // Clean data ก่อน export
+                  const cleanCode = String(row.code).replace(/['"‘’“”]/g, '').replace(/&#39;/g, '');
+                  return { ...row, code: cleanCode, status: computedStatus };
               });
               const worksheet = XLSX.utils.json_to_sheet(processedData);
               const workbook = XLSX.utils.book_new();
