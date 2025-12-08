@@ -245,13 +245,31 @@
       
       let currentUser = null;
       let dashboardSummaryData = {}; 
-      // แก้ไขโครงสร้างตัวแปรนี้ให้รองรับการจัดกลุ่มแบบซับซ้อน
       let detailedUsageReportData = {}; 
       let currentDisplayedCodes = [];
 
       _supabase.auth.onAuthStateChange((event, session) => {
         if (session) {
           currentUser = session.user;
+          const isServiceUser = currentUser.email === 'toacream1@gmail.com';
+
+          // ควบคุมการแสดงผลของแท็บตาม Role
+          const importTab = document.querySelector('a[href="#import"]').parentElement;
+          const manageTab = document.querySelector('a[href="#manage"]').parentElement;
+
+          if (isServiceUser) {
+              // ซ่อนแท็บสำหรับ Service User
+              importTab.style.display = 'none';
+              manageTab.style.display = 'none';
+              
+              // ตั้งค่าให้แท็บ "ใช้โค้ด" เป็นแท็บเริ่มต้นที่แสดง
+              $('#myTab a[href="#use-code"]').tab('show');
+          } else {
+              // แสดงทุกแท็บสำหรับผู้ใช้อื่น
+              importTab.style.display = '';
+              manageTab.style.display = '';
+          }
+
           showApp();
           initializeAppData();
         } else {
@@ -396,17 +414,35 @@
 
       function initializeAppData() {
         loadDropdowns();
-        loadDashboardData();
+        // Don't auto-load dashboard here; it's handled by the tab click event
         populateYearDropdowns();
-        loadUniqueCreationDates();
+        // Only load management data if the user is not a service user, as the tab will be hidden
+        if (currentUser && currentUser.email !== 'toacream1@gmail.com') {
+            loadUniqueCreationDates();
+        }
       }
 
       async function loadDropdowns() {
         try {
           const data = await callApi('getDropdownData');
-          populateSelect('importCodeType', data.codeTypes, '-- เลือกประเภทโค้ด --');
-          populateSelect('filterCodeType', data.codeTypes, '-- กรุณาเลือก --');
-          populateSelect('branch', data.branches, '-- เลือกเลขสาขา --');
+          const isServiceUser = currentUser && currentUser.email === 'toacream1@gmail.com';
+
+          if (isServiceUser) {
+              // สำหรับ Service User, ให้เห็นเฉพาะประเภท 'Service'
+              const filterSelect = document.getElementById('filterCodeType');
+              filterSelect.innerHTML = '<option value="Service" selected>Service</option>';
+              filterSelect.disabled = true; // ปิดไม่ให้แก้ไข
+              loadAvailableCodes(); // โหลดโค้ดประเภท Service ทันที
+              
+              populateSelect('branch', data.branches, '-- เลือกเลขสาขา --');
+              populateSelect('importCodeType', data.codeTypes, '-- เลือกประเภทโค้ด --');
+
+          } else {
+              document.getElementById('filterCodeType').disabled = false;
+              populateSelect('importCodeType', data.codeTypes, '-- เลือกประเภทโค้ด --');
+              populateSelect('filterCodeType', data.codeTypes, '-- กรุณาเลือก --');
+              populateSelect('branch', data.branches, '-- เลือกเลขสาขา --');
+          }
         } catch (error) { console.error("โหลด Dropdown ไม่สำเร็จ:", error); }
       }
 
@@ -424,7 +460,7 @@
               const year = currentYear - i;
               select.add(new Option(year, year));
           }
-          loadUsageReport();
+          // Don't auto-load report here; it's handled by tab click
       }
 
       function addNewOption(elementId, promptText) {
@@ -639,12 +675,20 @@
               initializeAppData();
           } catch (error) { console.error("Update failed:", error); }
       }
-
+      
+      // --- START: MODIFICATION FOR REPORTING ROLES ---
       async function loadDashboardData() {
         const dashboardContainer = document.getElementById('dashboard-container');
         dashboardContainer.innerHTML = '<p class="text-center">กำลังโหลดข้อมูล Dashboard...</p>';
         try {
-            const data = await callApi('getAllDataForReport');
+            let data = await callApi('getAllDataForReport');
+            const isServiceUser = currentUser && currentUser.email === 'toacream1@gmail.com';
+
+            // ถ้าเป็น Service User, กรองข้อมูลให้เห็นเฉพาะประเภท 'Service'
+            if (isServiceUser) {
+                data = data.filter(code => code.code_type === 'Service');
+            }
+
             const today = new Date(); today.setHours(0, 0, 0, 0);
             const summary = data.reduce((acc, code) => {
                 const type = code.code_type || 'ไม่ระบุประเภท';
@@ -678,7 +722,6 @@
         }
       }
 
-      // --- ฟังก์ชันโหลดรายงานแบบ Expandable (ซับซ้อนขึ้น) ---
       async function loadUsageReport() {
           const year = document.getElementById('reportYear').value;
           const tableBody = document.getElementById('usageReportTableBody');
@@ -686,7 +729,14 @@
           tableBody.innerHTML = `<tr><td colspan="${colspan}" class="text-center">กำลังโหลดข้อมูล...</td></tr>`;
           
           try {
-              const allData = await callApi('getAllDataForReport');
+              let allData = await callApi('getAllDataForReport');
+              const isServiceUser = currentUser && currentUser.email === 'toacream1@gmail.com';
+
+              // ถ้าเป็น Service User, กรองข้อมูลให้เห็นเฉพาะประเภท 'Service'
+              if (isServiceUser) {
+                  allData = allData.filter(code => code.code_type === 'Service');
+              }
+              
               // กรองเฉพาะที่ใช้แล้ว และตรงปี
               const usageData = allData.filter(c => c.status === 'ใช้แล้ว' && new Date(c.used_at).getFullYear() == year);
               
@@ -711,11 +761,9 @@
                       };
                   }
                   
-                  // อัปเดตยอดรวมของประเภท (Summary row)
                   groupedData[type].total_months[month]++;
                   groupedData[type].total_months.total++;
 
-                  // อัปเดตยอดแยกตามสาขา (Detail row)
                   if (!groupedData[type].branches[branch]) {
                       groupedData[type].branches[branch] = { 1:0,2:0,3:0,4:0,5:0,6:0,7:0,8:0,9:0,10:0,11:0,12:0, total:0 };
                   }
@@ -723,19 +771,15 @@
                   groupedData[type].branches[branch].total++;
               });
 
-              // เก็บข้อมูลใส่ตัวแปร Global ไว้ใช้ตอน Export
               detailedUsageReportData = groupedData;
 
-              // สร้าง HTML Table
               tableBody.innerHTML = '';
               let typeIndex = 0;
 
               for (const [type, data] of Object.entries(groupedData)) {
                   typeIndex++;
-                  const rowId = `row-${typeIndex}`;
                   const summary = data.total_months;
                   
-                  // --- แถวหลัก (Summary Row) ---
                   let mainRowHtml = `
                     <tr class="clickable-row" data-toggle="collapse" data-target=".detail-${typeIndex}" aria-expanded="false">
                         <td class="font-weight-bold"><i class="fas fa-chevron-down mr-2" style="font-size: 0.8rem;"></i>${type}</td>
@@ -747,8 +791,6 @@
                   `;
                   tableBody.innerHTML += mainRowHtml;
 
-                  // --- แถวย่อย (Detail Rows - Hidden by default) ---
-                  // เรียงสาขาตามตัวเลข/ตัวอักษร
                   const sortedBranches = Object.keys(data.branches).sort();
                   
                   sortedBranches.forEach(branch => {
@@ -766,7 +808,6 @@
                   });
               }
 
-              // Add collapse toggle listener just for icon rotation
               $('.clickable-row').click(function(){
                   $(this).attr('aria-expanded', $(this).attr('aria-expanded') === 'true' ? 'false' : 'true');
               });
@@ -776,6 +817,7 @@
               tableBody.innerHTML = `<tr><td colspan="${colspan}" class="text-center text-danger">เกิดข้อผิดพลาดในการโหลดข้อมูล</td></tr>`;
           }
       }
+      // --- END: MODIFICATION FOR REPORTING ROLES ---
 
       function handleSmartExport() {
           const selectedCheckboxes = document.querySelectorAll('.code-checkbox:checked');
@@ -834,7 +876,6 @@
           }
       }
 
-      // --- แก้ไขฟังก์ชัน Export Report ให้ดึงข้อมูลสาขาด้วย ---
       async function handleExport(type) {
         try {
             let dataToExport = [];
@@ -849,12 +890,10 @@
                 fileName = `DashboardReport_${today}.xlsx`;
             
             } else if (type === 'usage_report') {
-                // ใช้ข้อมูล detailedUsageReportData ที่เตรียมไว้จากฟังก์ชัน loadUsageReport
                 if (Object.keys(detailedUsageReportData).length === 0) { return alert('ไม่มีข้อมูลในตารางให้ Export'); }
                 
                 const monthHeaders = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
                 
-                // Loop ผ่าน Type -> Branch
                 for (const [codeType, typeData] of Object.entries(detailedUsageReportData)) {
                     const sortedBranches = Object.keys(typeData.branches).sort();
                     
@@ -862,7 +901,7 @@
                         const counts = typeData.branches[branch];
                         const rowData = { 
                             'ประเภทโค้ด': codeType,
-                            'สาขา': branch // เพิ่มคอลัมน์สาขา
+                            'สาขา': branch
                         };
                         for (let i = 0; i < 12; i++) { rowData[monthHeaders[i]] = counts[i + 1]; }
                         rowData['รวม'] = counts.total;
